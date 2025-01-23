@@ -3,11 +3,8 @@ const { Client, MessageMedia, LocalAuth } = require("whatsapp-web.js");
 const path = require("path");
 const MessageLog = require("./model/message.model");
 const { CODESTATUS } = require("./config/status");
-const { Server } = require("socket.io");
 const { SOCKET } = require("./config/socket");
-const { io } = require("./index");
-// const { server } = require("./index");
-// const io = new Server(server);
+const { io } = require("./app");
 
 const router = express.Router();
 
@@ -23,7 +20,7 @@ const sendRealStats = async () => {
   try {
     // Fetch required fields from the database
     const logs = await MessageLog.find({}).sort({ createdAt: -1 });
-    const stats = await Model.aggregate([
+    const stats = await MessageLog.aggregate([
       {
         $group: {
           _id: "$status", // Group by the `status` field
@@ -46,9 +43,9 @@ const sendRealStats = async () => {
         statusCounts[_id] = count;
       }
     });
-    io.emit(SOCKET.STREAM_DATA, { logs, statusCounts });
+    // io.emit(SOCKET.STREAM_DATA, { logs, statusCounts });
   } catch (error) {
-    io.emit(SOCKET.STREAM_ERROR, { message: error.message });
+    // io.emit(SOCKET.STREAM_ERROR, { message: error.message });
     throw new Error("Failed to fetch message logs");
   }
 };
@@ -97,9 +94,9 @@ const formatPhoneNumber = (phoneNumber) => phoneNumber.replace(/[\+\s]/g, "");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const insertLogsToDb = async (db, messageObj) => {
   try {
-    await db.insert(messageObj);
+    await db.create(messageObj);
   } catch (error) {
-    await db.insert({
+    await db.create({
       ...messageObj,
       status: CODESTATUS.FAILED,
       reason: error.message,
@@ -107,8 +104,29 @@ const insertLogsToDb = async (db, messageObj) => {
   }
 
   //   get data from databases
-  sendRealStats();
+  // sendRealStats();
 };
+
+// const check = false;
+// let ind = 0;
+
+// if (check) {
+//   [...new Array(500)].map(async (item, index) => {
+//     const int = setInterval(async () => {
+//       await insertLogsToDb(MessageLog, {
+//         phoneNumber: `91${index + 2}34${index}32${index + 1}`,
+//         status: [...Object.values(CODESTATUS)][4 % index],
+//         reason: index % 2 == 0 ? "success" : "failed",
+//         count: 1,
+//       });
+//     }, 1000);
+//     ind++;
+
+//     if (ind >= 500) {
+//       clearInterval(int);
+//     }
+//   });
+// }
 
 // Send message with retry mechanism
 async function sendMessageWithRetry(
@@ -140,7 +158,7 @@ async function sendMessageWithRetry(
       await insertLogsToDb({
         phoneNumber: chatId,
         status: CODESTATUS.RETRY,
-        reason: "Retrying for contact ${chatId}",
+        reason: `Retrying for contact ${chatId}`,
       });
       return sendMessageWithRetry(
         chatId,
@@ -168,7 +186,7 @@ async function processBatch(batch, bannerMedia, audioMedia, messageLogs) {
         await insertLogsToDb({
           phoneNumber,
           status: CODESTATUS.SKIPPED,
-          reason: "Already sended message",
+          reason: `Already sended message for contact ${phoneNumber}`,
         });
         continue;
       }
@@ -305,6 +323,39 @@ router.get("/send", async (req, res) => {
   }
 });
 
+router.get("/logs", async (req, res) => {
+  try {
+    const logs = await MessageLog.find({}).sort({ createdAt: -1 });
+    const stats = await MessageLog.aggregate([
+      {
+        $group: {
+          _id: "$status", // Group by the `status` field
+          count: { $sum: 1 }, // Count the number of occurrences for each status
+        },
+      },
+    ]);
+    // Transform the result into an object with default values
+    const statusCounts = {
+      success: 0,
+      pending: 0,
+      failed: 0,
+      skipped: 0,
+      retry: 0,
+    };
+
+    stats.forEach(({ _id, count }) => {
+      if (statusCounts.hasOwnProperty(_id)) {
+        statusCounts[_id] = count;
+      }
+    });
+    res.status(200).json({
+      logs,
+      statusCounts,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 // Health check endpoint
 router.get("/health", (req, res) => {
   res.json({ status: "OK" });

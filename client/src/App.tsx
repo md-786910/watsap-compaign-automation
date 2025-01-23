@@ -6,34 +6,34 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { io } from "socket.io-client";
 
 interface MessageLog {
   phoneNumber: string;
   status: string;
   reason?: string;
   error?: string;
-  timestamp?: string;
+  createdAt?: string;
 }
 
 interface Stats {
-  total: number;
-  sent: number;
-  error: number;
+  total?: number;
+  success: number;
+  failed: number;
   skipped: number;
-  retrying: number;
+  retry: number;
+  pending: number;
 }
+const API = "http://localhost:3000";
 
-const socket = io("http://localhost:3000");
-console.log({ socket });
 function App() {
   const [logs, setLogs] = useState<MessageLog[]>([]);
   const [stats, setStats] = useState<Stats>({
     total: 0,
-    sent: 0,
-    error: 0,
+    success: 0,
+    failed: 0,
     skipped: 0,
-    retrying: 0,
+    retry: 0,
+    pending: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,10 +42,11 @@ function App() {
     const fetchData = async () => {
       try {
         // Replace with actual API endpoint
-        const response = await fetch("/api/logs");
+        const response = await fetch(`${API}/api/logs`);
         const data = await response.json();
+        console.log(data);
         setLogs(data.logs);
-        calculateStats(data.logs);
+        calculateStats(data.logs, data?.statusCounts);
       } catch (error) {
         console.error("Error fetching logs:", error);
       } finally {
@@ -55,32 +56,37 @@ function App() {
 
     fetchData();
     // Poll for updates every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    socket.on("connection", () => {});
-  }, []);
-
-  const calculateStats = (logs: MessageLog[]) => {
-    const newStats = logs.reduce(
-      (acc, log) => ({
-        ...acc,
-        sent: acc.sent + (log.status === "success" ? 1 : 0),
-        error: acc.error + (log.status === "error" ? 1 : 0),
-        skipped: acc.skipped + (log.status === "skipped" ? 1 : 0),
-        retrying: acc.retrying + (log.status === "retry" ? 1 : 0),
-      }),
-      {
-        total: logs.length,
-        sent: 0,
-        error: 0,
-        skipped: 0,
-        retrying: 0,
-      }
-    );
-    setStats(newStats);
+  const calculateStats = (logs: MessageLog[], countStats: Stats) => {
+    // const newStats = logs.reduce(
+    //   (acc, log) => ({
+    //     ...acc,
+    //     sent: acc.sent + (log.status === "success" ? 1 : 0),
+    //     error: acc.error + (log.status === "error" ? 1 : 0),
+    //     pending: acc.pending + (log.status === "pending" ? 1 : 0),
+    //     skipped: acc.skipped + (log.status === "skipped" ? 1 : 0),
+    //     retrying: acc.retry + (log.status === "retry" ? 1 : 0),
+    //   }),
+    //   {
+    //     total: logs.length,
+    //     sent: 0,
+    //     error: 0,
+    //     skipped: 0,
+    //     retry: 0,
+    //     pending: 0,
+    //   }
+    // );
+    setStats({
+      total: logs.length,
+      success: countStats?.success,
+      failed: countStats?.failed,
+      skipped: countStats?.skipped,
+      retry: countStats?.retry,
+      pending: countStats?.pending,
+    });
   };
 
   const StatCard = ({
@@ -128,13 +134,13 @@ function App() {
           />
           <StatCard
             title="Sent Successfully"
-            value={stats.sent}
+            value={stats.success}
             icon={CheckCircle}
             color="bg-green-500"
           />
           <StatCard
             title="Failed"
-            value={stats.error}
+            value={stats.failed}
             icon={XCircle}
             color="bg-red-500"
           />
@@ -146,7 +152,7 @@ function App() {
           />
           <StatCard
             title="Retrying"
-            value={stats.retrying}
+            value={stats.retry}
             icon={RefreshCw}
             color="bg-purple-500"
           />
@@ -155,7 +161,7 @@ function App() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">
-              Message Logs
+              Message Logs - {logs?.length}
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -196,7 +202,7 @@ function App() {
                     </td>
                   </tr>
                 ) : (
-                  logs.map((log, index) => (
+                  logs?.map((log, index) => (
                     <tr key={index}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {log.phoneNumber}
@@ -205,23 +211,23 @@ function App() {
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                           ${
-                            log.status === "Success"
+                            log.status === "success"
                               ? "bg-green-100 text-green-800"
-                              : log.status === "Error"
+                              : log.status === "error"
                               ? "bg-red-100 text-red-800"
-                              : log.status === "Skipped"
+                              : log.status === "skipped"
                               ? "bg-yellow-100 text-yellow-800"
                               : "bg-purple-100 text-purple-800"
                           }`}
                         >
-                          {log.status}
+                          {log?.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {log.reason || log.error || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.timestamp || "-"}
+                        {log.createdAt || "-"}
                       </td>
                     </tr>
                   ))

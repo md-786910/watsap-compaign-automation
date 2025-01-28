@@ -1,36 +1,53 @@
-const { server, app, io } = require("./app");
-// const SocketManager = require("./config/socketManager");
-const mongoose = require("mongoose");
-const router = require("./watsapp");
+const { dbConnect } = require("./config/connection");
+const { initSocket } = require("./config/socketManager");
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const router = require("./routes/watsappRoute");
+const app = express();
+const server = http.createServer(app);
 
-// const socketManager = new SocketManager(server);
-// const io = socketManager.getIo();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
-  socket.on("disconnect", () => {
-    console.log("user disconnected");
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+// errorHandler.js
+const errorHandler = (err, req, res, next) => {
+  console.error(`[Error]: ${err.message}`);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
   });
-});
-
-// @connect to db
-const dbConnect = async () => {
-  try {
-    // MongoDB connection
-    mongoose.connect("mongodb://localhost:27017/whatsappAutomation", {});
-    mongoose.connection.on("connected", () => {
-      console.log("Connected to MongoDB");
-    });
-  } catch (error) {
-    throw new Error(error.mesage);
-  }
 };
+
+app.use(errorHandler); // Place at the end after all routes
 
 app.use("/api", router);
 
 // Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
+  // Initialize socket.io
+  await initSocket(server);
   await dbConnect();
   console.log(`Server running on port ${PORT}`);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error(`[Uncaught Exception]: ${err.message}`);
+  // Optional: Shut down gracefully
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error(`[Unhandled Rejection]: ${reason}`);
+  // Optional: Shut down gracefully
 });

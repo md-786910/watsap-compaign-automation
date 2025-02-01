@@ -1,5 +1,10 @@
 import React from "react";
-import { LayoutDashboard, FileSpreadsheet, FileText } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileSpreadsheet,
+  FileText,
+  Settings,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -62,6 +67,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
           text="Template"
           showText={isSidebarOpen}
           link="/template"
+        />
+        <SidebarLink
+          icon={Settings}
+          text="Settings"
+          showText={isSidebarOpen}
+          link="/settings"
         />
       </nav>
     </aside>

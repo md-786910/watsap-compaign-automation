@@ -4,7 +4,7 @@ const { MessageMedia } = require("whatsapp-web.js");
 const path = require("path");
 const { delay, RECIPIENTS } = require("../utils/common");
 const { emitIOMessage } = require("../config/socketManager");
-const client = require("../config/watsappConfig");
+const { getClient } = require("../config/watsappConfig");
 // Load media files
 const bannerMedia = MessageMedia.fromFilePath(
   path.join(__dirname, "../files", "c.jpg")
@@ -14,8 +14,9 @@ const audioMedia = MessageMedia.fromFilePath(
 );
 
 exports.LoadCampaingAndStarted = async (req, res) => {
+  const client = getClient();
   // Check if client is ready
-  if (!client.isReady) {
+  if (!client) {
     emitIOMessage(
       "WhatsApp client not connected. Please scan QR code or wait for connection"
     );

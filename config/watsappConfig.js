@@ -1,33 +1,40 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
-// const { emitIOMessage } = require("./socketManager");
 
-// WhatsApp client configuration
-const client = new Client({
-  puppeteer: {
-    headless: false,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  },
-  authStrategy: new LocalAuth({ clientId: "LOCAL_ID" }),
-});
+let client = null; // Store the WhatsApp client instance
 
-// Event handlers
-client.on("qr", (qr) => {
-  console.log("QR Code:", qr);
-});
-client.on("ready", () => {
-  console.log("WhatsApp Web is ready!");
-  // emitIOMessage("watsapp connected successfully");
-});
+const initializeClientWebjs = (clientId = "default") => {
+  if (client) {
+    console.log("WhatsApp client is already initialized.");
+    return client;
+  }
+  client = new Client({
+    puppeteer: {
+      headless: false,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    },
+    authStrategy: new LocalAuth({ clientId }),
+  });
 
-client.on("auth_failure", (msg) => {
-  console.error("Authentication failed:", msg);
-  // emitIOMessage("whatsapp authentication failed");
-});
+  return client;
+};
 
-client.on("disconnected", (reason) => {
-  console.log("Client was logged out", reason);
-  // Implement reconnection logic
-  // emitIOMessage("whatsapp disconnected " + reason);
-});
+const disconnectClient = () => {
+  if (client) {
+    client.destroy();
+    client = null;
+    console.log("WhatsApp client disconnected.");
+  } else {
+    console.log("No active WhatsApp client to disconnect.");
+    throw new Error("No active WhatsApp client to disconnect.");
+  }
+};
 
-module.exports = client;
+const getClient = () => {
+  if (!client) {
+    console.log("WhatsApp client is not initialized.");
+    return false;
+  }
+  return client;
+};
+
+module.exports = { initializeClientWebjs, disconnectClient, getClient };

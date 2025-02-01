@@ -31,7 +31,7 @@ export const Dashboard = () => {
     const fetchData = async () => {
       try {
         // Replace with actual API endpoint
-        const response = await axiosInstance.get(`/api/logs`);
+        const response = await axiosInstance.get(`/logs`);
         const data = response.data;
         setLogs(data.logs);
         calculateStats(data.logs, data?.statusCounts);

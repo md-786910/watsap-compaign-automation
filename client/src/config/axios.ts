@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import { API } from "../utils/common";
+import showToast from "../helpers/Toast";
 
 // Create an Axios instance with custom configuration
 const axiosInstance: AxiosInstance = axios.create({
@@ -23,6 +24,7 @@ axiosInstance.interceptors.request.use(
   },
   (error: AxiosError) => {
     // Handle request errors
+    showToast("error", error.message);
     return Promise.reject(error);
   }
 );
@@ -40,6 +42,7 @@ axiosInstance.interceptors.response.use(
       console.error("Unauthorized access. Redirecting to login...");
       window.location.href = "/login"; // Redirect to login page
     }
+    showToast("error", error.message);
     return Promise.reject(error);
   }
 );

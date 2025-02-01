@@ -1,9 +1,9 @@
 const { CODESTATUS } = require("../config/status");
-const client = require("../config/watsappConfig");
 const { createTemplate } = require("../template/watsapTemplate");
 const { formatPhoneNumber, insertLogsToDb, delay } = require("../utils/common");
 const MessageLog = require("../model/message.model");
 const { emitIOMessage } = require("../config/socketManager");
+const { getClient } = require("../config/watsappConfig");
 // Configuration
 const BATCH_CONFIG = {
   BATCH_SIZE: 20,
@@ -13,13 +13,13 @@ const BATCH_CONFIG = {
   RETRY_DELAY: 5000,
   SEND_ONE_TIME_COUNT: 2, //!@ At MAX 2 times
 };
-
 // Send message with retry mechanism
 async function sendMessageWithRetry(
   chatId,
   name,
   bannerMedia,
   audioMedia,
+  client,
   retryCount = 0
 ) {
   try {
@@ -51,6 +51,7 @@ async function sendMessageWithRetry(
         name,
         bannerMedia,
         audioMedia,
+        client,
         retryCount + 1
       );
     }
@@ -60,6 +61,10 @@ async function sendMessageWithRetry(
 
 // Process messages in batches
 async function processBatch(batch, bannerMedia, audioMedia, messageLogs) {
+  const client = getClient();
+  if (!client) {
+    throw new Error("WhatsApp client not connected");
+  }
   for (const recipient of batch) {
     emitIOMessage(`Reaading phone number ${recipient.phoneNumber}`);
     const { phoneNumber, name } = recipient;
@@ -130,7 +135,8 @@ async function processBatch(batch, bannerMedia, audioMedia, messageLogs) {
         chatId,
         name,
         bannerMedia,
-        audioMedia
+        audioMedia,
+        client
       );
       if (result) {
         await insertLogsToDb({

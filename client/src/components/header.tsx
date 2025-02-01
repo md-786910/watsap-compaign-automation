@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Menu, MessageCircle, LogIn, LogOut } from "lucide-react";
 import socket from "../config/socketConfig";
+import axiosInstance from "../config/axios";
+import showToast from "../helpers/Toast";
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -12,36 +14,53 @@ export const Header: React.FC<HeaderProps> = ({
   setIsSidebarOpen,
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [connectMessage, setConnectMessage] = useState<string>("");
+  const [connectMessage, setConnectMessage] = useState<string>("...");
   const [isConnected, setIsconnected] = useState(false);
-  const connectToWatsapp = () => {
-    console.log("cons");
-    socket.emit("watsapp_connected", true);
+  const [isLoading, setIsLoading] = useState(false);
+  const connectToWatsapp = async () => {
+    try {
+      setIsLoading(true);
+      const resp = await axiosInstance.post("/connect-watsapp", {
+        session_id: "12ew2u389",
+        // Math.random().toString(36).substring(2, 15) +
+        // Math.random().toString(36).substring(2, 15),
+      });
+      if (resp.status == 200) {
+        setConnectMessage(resp.data.message);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        showToast(error.message, "error");
+      } else {
+        showToast("An unknown error occurred", "error");
+      }
+      setIsLoggedIn(false);
+    } finally {
+      setIsLoggedIn(false);
+    }
   };
-
-  const disconnectToWatsapp = () => {
+  const disconnectToWatsapp = async () => {
     socket.emit("watsapp_disconnected", false);
+    const resp = await axiosInstance.delete("/connect-watsapp");
+    if (resp.status == 200) {
+      setConnectMessage(resp.data.message);
+      showToast(resp.data.message, "success");
+      setIsconnected(false);
+    }
   };
 
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
-    socket.on("wait_for_shutdown", (data) => {
-      console.log(data);
+    socket.connect();
+    // @listen for the 'watsapp_connected' event
+    socket.on("watsapp_connected", (data) => {
+      setIsconnected(true);
       setConnectMessage(data.message);
-      setIsconnected(data.status);
     });
 
-    socket.on("watsapp_connected_reply", (data) => {
+    //@refresh seesion
+    socket.on("refresh_session", (data) => {
       console.log(data);
-      setConnectMessage(data.message);
-      setIsconnected(data.status);
-    });
-    socket.on("watsapp_disconnected_reply", (data) => {
-      console.log(data);
-      setConnectMessage(data.message);
-      setIsconnected(false);
+      localStorage.clear();
     });
 
     return () => {
@@ -64,16 +83,21 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-xl font-semibold text-gray-800">
               WhatsApp Compaign
             </span>
-            <h4 className="text-blue-600">{connectMessage}</h4>
           </div>
+        </div>
+        <div className="text-center p-[0.5px] rounded-md">
+          <h4 className="flex items-center text-green-900 font-normal text-xl">
+            {connectMessage}
+          </h4>
         </div>
         <div className="flex gap-4">
           {!isConnected && (
             <button
               onClick={() => connectToWatsapp()}
-              className="flex items-center space-x-2 px-4 py-2 rounded-md bg-blue-50 text-red-600 hover:bg-blue-100 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 rounded-md bg-blue-500 text-red-100 hover:bg-blue-400 transition-colors"
+              disabled={isLoading}
             >
-              <span>Connect to watsapp</span>
+              <span>{isLoading ? "connecting..." : "Connect to watsapp"}</span>
             </button>
           )}
           {isConnected && (

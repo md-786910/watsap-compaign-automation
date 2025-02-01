@@ -3,6 +3,7 @@ import { Dashboard } from "./components/dashboard";
 import { ReadSheet } from "./components/sheet/readSheet";
 import { ReadTemplate } from "./components/template/readTemplate";
 import AppLayout from "./components/AppLayout";
+import { Settings } from "./components/settings/Setting";
 
 // Define your routes
 const router = createBrowserRouter([
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: "/sheet",
         element: <ReadSheet />,
+      },
+      {
+        path: "/settings",
+        element: <Settings />,
       },
       // Add more routes here
     ],

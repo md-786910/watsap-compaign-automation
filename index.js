@@ -1,18 +1,23 @@
+require("dotenv").config();
 const { dbConnect } = require("./config/connection");
-const { initSocket } = require("./config/socketManager");
+// const { initSocket } = require("./config/socketManager");
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
-const router = require("./routes/watsappRoute");
 const app = express();
 const server = http.createServer(app);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const watsappRouter = require("./routes/watsappRoute");
+const generalRouter = require("./routes/generalRoutes");
+const { initSocket, getIO } = require("./config/socketManager");
+
+const router = express.Router();
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -21,16 +26,21 @@ app.use(
 
 // errorHandler.js
 const errorHandler = (err, req, res, next) => {
-  console.error(`[Error]: ${err.message}`);
-  res.status(err.status || 500).json({
+  const errorInfo = {
     success: false,
     message: err.message || "Internal Server Error",
-  });
+    status: err.status || 500,
+    stack: err.stack, // Captures the file, line number, and full trace
+  };
+
+  res.status(errorInfo.status).json(errorInfo);
 };
 
-app.use(errorHandler); // Place at the end after all routes
+app.use("/api/v1", router);
 
-app.use("/api", router);
+// Defined router for application
+router.use(watsappRouter);
+router.use(generalRouter);
 
 // Start server
 const PORT = process.env.PORT || 3000;
@@ -38,8 +48,16 @@ server.listen(PORT, async () => {
   // Initialize socket.io
   await initSocket(server);
   await dbConnect();
+
   console.log(`Server running on port ${PORT}`);
 });
+
+// Unknown Route Handler
+app.use((req, res, next) => {
+  next(new Error("Route Not Found", 404));
+});
+
+app.use(errorHandler); // Place at the end after all routes
 
 process.on("uncaughtException", (err) => {
   console.error(`[Uncaught Exception]: ${err.message}`);

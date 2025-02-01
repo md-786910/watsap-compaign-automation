@@ -4,17 +4,13 @@ const {
   getWatsappCompaign,
 } = require("../controller/watsappController");
 const { getIO } = require("../config/socketManager");
-const router = express.Router();
+const watsappRouter = express.Router();
 
-router.get("/send", LoadCampaingAndStarted);
-
-router.get("/logs", getWatsappCompaign);
-
-//@handle proccessed sheet
-// router.get("/processed-sheet", );
+watsappRouter.get("/send", LoadCampaingAndStarted);
+watsappRouter.get("/logs", getWatsappCompaign);
 
 // Health check endpoint
-router.get("/health", (req, res) => {
+watsappRouter.get("/health", (req, res) => {
   const io = getIO();
   io.emit("message", {
     type: "health",
@@ -25,4 +21,4 @@ router.get("/health", (req, res) => {
   res.json({ status: "OK" });
 });
 
-module.exports = router;
+module.exports = watsappRouter;

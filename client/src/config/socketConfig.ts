@@ -1,8 +1,7 @@
 import { io, Socket } from "socket.io-client";
-import { API } from "../utils/common";
+import { SOCKET_API } from "../utils/common";
 
-// Create a Socket.IO connection
-const socket: Socket = io(API, {
+const socket: Socket = io(SOCKET_API, {
   autoConnect: false, // Disable auto-connect (optional)
   reconnection: true, // Enable reconnection
   reconnectionAttempts: 5, // Number of reconnection attempts

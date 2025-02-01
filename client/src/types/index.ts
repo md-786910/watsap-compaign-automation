@@ -30,3 +30,11 @@ export interface Template {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Session {
+  id: string;
+  phoneNumber: string;
+  status: "active" | "inactive";
+  lastActive: string;
+  deviceName: string;
+}

@@ -18,13 +18,12 @@ const initSocket = async (server) => {
         status: "connected",
       });
     }
-
-    socket.on("watsapp_disconnected", (data) => {
-      socket.emit(SOCKET.WATSAPP_DISCONNECTED, {
-        message: "whatsApp diconnected",
-        status: "disconnected",
+    if (!client) {
+      io.emit(SOCKET.WATSAPP_DISCONNECTED, {
+        disconnected: true,
+        message: "watsapp not connected",
       });
-    });
+    }
 
     socket.on("disconnect", () => {
       console.log("User disconnected");
@@ -42,11 +41,9 @@ const getIO = () => {
 };
 
 const emitIOMessage = (msg) => {
-  // const io = getIO();
   if (io) {
     io.emit(SOCKET.MESSAGE, msg);
   }
 };
 // @initialize it when start from client side
-
 module.exports = { initSocket, getIO, emitIOMessage };

@@ -2,15 +2,24 @@ const { getIO } = require("../config/socketManager");
 const {
   initializeClientWebjs,
   disconnectClient,
+  getClient,
 } = require("../config/watsappConfig");
 const { SOCKET } = require("../constant/socket");
+const processedSheet = require("../model/processed_sheet.model");
+const WatsappBatch = require("../model/watsap_batch.model");
 const WatsappSession = require("../model/watsap_session.model");
 const AppError = require("../utils/AppError");
 const CatchAsync = require("../utils/CatchAsync");
 const path = require("path");
+const ProcessSheetManager = require("../utils/processSheetData");
+const { cleanupFile } = require("../helper/multer");
 const fs = require("fs").promises;
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
+  const existingClient = getClient();
   try {
+    if (existingClient) {
+      existingClient.destroy();
+    }
     // Get IO instance
     const io = getIO();
     const { session_id } = req.body;
@@ -20,13 +29,24 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
       return next(new AppError("Session ID is required", 400)); // 400 Bad Request is more appropriate
     }
 
-    // Check if session exists in the database, if not, create it
-    if (!(await WatsappSession.findOne({ session_id }))) {
-      await WatsappSession.create({ session_id });
-    }
-
     // Initialize the WhatsApp client
     const client = await initializeClientWebjs(session_id);
+
+    // Check if session exists in the database, if not, create it
+    const session = await WatsappSession.findOne({ session_id });
+    if (!session) {
+      await WatsappSession.create({
+        session_id,
+        phone_number: client.info?.wid?.user,
+        device: client.info?.platform,
+        status: "active",
+        user: client.info?.pushname,
+      });
+    }
+    // @UPDATE SESSION TO BE INACTIVE
+    await WatsappSession.updateMany({
+      status: "inactive",
+    });
 
     // Handle QR code event
     client.on("qr", (qr) => {
@@ -39,12 +59,26 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     });
 
     // Handle ready event
-    client.on("ready", () => {
+    client.on("ready", async () => {
       console.log("WhatsApp Web is ready!");
       io.emit(SOCKET.WATSAPP_CONNECTED, {
         message: "connected to whatsApp successfully",
         status: "connected",
       });
+      if (!session) {
+        session.status = "active";
+        session.user = client.info?.pushname;
+        session.phone_number = client.info?.wid?.user;
+        session.device = client.info?.platform;
+        await session.save();
+      } else {
+        //@update only session
+        session.status = "active";
+        session.user = client.info?.pushname;
+        session.phone_number = client.info?.wid?.user;
+        session.device = client.info?.platform;
+        await session.save();
+      }
     });
 
     // Handle authentication failure
@@ -86,6 +120,9 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
 });
 
 exports.disconnectedFromWatsapp = CatchAsync(async (req, res, next) => {
+  await WatsappSession.updateMany({
+    status: "inactive",
+  });
   disconnectClient();
   res.status(200).json({
     message: "watsapp disconnected successfully",
@@ -127,5 +164,114 @@ exports.deleteSession = CatchAsync(async (req, res, next) => {
   res.status(200).json({
     message: "session deleted successfully",
     status: true,
+  });
+});
+
+exports.createWatsappBatch = CatchAsync(async (req, res, next) => {
+  if (!req.body) {
+    return next(new AppError("Req body is required", 200));
+  }
+  const { batch_size, message_delay, batch_delay } = req.body;
+  console.log(req.body);
+  const batch = await WatsappBatch.findOne({});
+  console.log({ batch });
+  if (!batch) {
+    // create
+    await WatsappBatch.create({
+      batch_size,
+      message_delay,
+      batch_delay,
+    });
+  } else {
+    // @update
+    await WatsappBatch.updateOne(
+      { _id: batch._id },
+      {
+        batch_size,
+        message_delay,
+        batch_delay,
+      }
+    );
+  }
+  res.status(200).json({
+    message: "batch created successfully",
+    status: true,
+  });
+});
+
+exports.getWatsapBatch = CatchAsync(async (req, res, next) => {
+  const batch = await WatsappBatch.findOne({});
+  res.status(200).json({
+    message: "batch fetched successfully",
+    status: true,
+    data: batch,
+  });
+});
+
+// @process sheet
+exports.processSheet = CatchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError("Sheet is required", 200));
+  }
+
+  // @clear sheet model
+  await processedSheet.deleteMany({});
+  // end
+
+  const { originalname, path, mimetype } = req.file;
+  let extractedData = [];
+  const proccesSheetClass = new ProcessSheetManager(path);
+  if (mimetype === "text/csv") {
+    extractedData = await proccesSheetClass.parseCSV(path);
+  } else if (
+    mimetype ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    mimetype === "application/vnd.ms-excel"
+  ) {
+    extractedData = await proccesSheetClass.parseExcel(path);
+  } else if (mimetype === "application/pdf") {
+    extractedData = await proccesSheetClass.parsePDF(path);
+  } else {
+    return res.status(400).json({ error: "Unsupported file format" });
+  }
+
+  if (extractedData.length == 0) {
+    cleanupFile(path);
+  }
+
+  // @insrting in db
+  for (const data of extractedData) {
+    if (
+      await processedSheet.findOne({ phone_number: `+91${data.phone_number}` })
+    ) {
+      console.log("Skipping, already exists");
+      continue;
+    }
+
+    const phoneNumberProcess = data.phone_number?.startsWith("+91")
+      ? data.phone_number
+      : `+91${data.phone_number}`;
+
+    await processedSheet.create({
+      name: data.name,
+      phone_number: phoneNumberProcess,
+      fileName: originalname,
+    });
+  }
+
+  // Delete the uploaded file
+  cleanupFile(path);
+  res.json({
+    message: "File uploaded & processed successfully",
+    data: extractedData,
+  });
+});
+
+exports.getSheet = CatchAsync(async (req, res, next) => {
+  const sheet = await processedSheet.find({}).sort({ createdAt: -1 });
+  res.status(200).json({
+    message: "sheet fetched successfully",
+    status: true,
+    data: sheet,
   });
 });

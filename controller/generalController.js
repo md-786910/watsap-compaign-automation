@@ -12,7 +12,8 @@ const AppError = require("../utils/AppError");
 const CatchAsync = require("../utils/CatchAsync");
 const path = require("path");
 const ProcessSheetManager = require("../utils/processSheetData");
-const { cleanupFile } = require("../helper/multer");
+const { cleanupFile, fileNameSave } = require("../helper/multer");
+const Template = require("../model/template.model");
 const fs = require("fs").promises;
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
   const existingClient = getClient();
@@ -244,12 +245,14 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
     if (
       await processedSheet.findOne({ phone_number: `+91${data.phone_number}` })
     ) {
-      console.log("Skipping, already exists");
+      console.log("Skipping, already exists", data);
       continue;
     }
 
-    const phoneNumberProcess = data.phone_number?.startsWith("+91")
-      ? data.phone_number
+    const phoneNumberProcess = String(data?.phone_number || "").startsWith(
+      "+91"
+    )
+      ? String(data.phone_number)
       : `+91${data.phone_number}`;
 
     await processedSheet.create({
@@ -273,5 +276,71 @@ exports.getSheet = CatchAsync(async (req, res, next) => {
     message: "sheet fetched successfully",
     status: true,
     data: sheet,
+  });
+});
+
+// Create or Update Template
+exports.createTemplate = CatchAsync(async (req, res, next) => {
+  const { name, content } = req.body;
+  if (!name || !content) {
+    return next(new AppError("Name and content are required", 200));
+  }
+  const { imageUrl = null, documentUrl = null, audioUrl = null } = req.files;
+  console.log({ imageUrl, documentUrl, audioUrl });
+
+  const getTemplateExist = await Template.findOne({ name });
+  let template = getTemplateExist;
+  const fileObj = {
+    imageUrl: imageUrl?.[0]?.path,
+    documentUrl: documentUrl?.[0]?.path,
+    audioUrl: audioUrl?.[0]?.path,
+    imageName: imageUrl && fileNameSave(imageUrl?.[0]),
+    audioName: audioUrl && fileNameSave(audioUrl?.[0]),
+    documentName: documentUrl && fileNameSave(documentUrl?.[0]),
+  };
+  if (!getTemplateExist) {
+    template = await Template.create({
+      name,
+      content,
+      ...fileObj,
+    });
+  } else {
+    //@update
+    console.log({ template });
+    const fileObj = {
+      name,
+      content,
+      imageUrl: imageUrl?.[0]?.path || template.imageUrl,
+      documentUrl: documentUrl?.[0]?.path || template.documentUrl,
+      audioUrl: audioUrl?.[0]?.path || template.audioUrl,
+      imageName: imageUrl ? fileNameSave(imageUrl?.[0]) : template.imageName,
+      audioName: audioUrl ? fileNameSave(audioUrl?.[0]) : template.audioName,
+      documentName: documentUrl
+        ? fileNameSave(documentUrl?.[0])
+        : template.documentName,
+    };
+    template = await Template.findOneAndUpdate(
+      { _id: getTemplateExist._id },
+      {
+        name,
+        content,
+        ...fileObj,
+      }
+    );
+  }
+  res.status(200).json({
+    message: "Template created successfully",
+    status: true,
+    data: template,
+  });
+});
+
+// Get All Templates
+exports.getTemplates = CatchAsync(async (req, res, next) => {
+  const templates = await Template.findOne({}).sort({ createdAt: -1 });
+  res.status(200).json({
+    message: "Templates fetched successfully",
+    status: true,
+    data: templates,
   });
 });

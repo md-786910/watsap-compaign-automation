@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Upload,
 } from "lucide-react";
+import Button from "../../utils/button";
 
 
 export const ReadTemplate = () => {
@@ -143,10 +144,15 @@ export const ReadTemplate = () => {
     <div className="space-y-6">
       {/* Template Editor */}
       <div className="bg-white rounded-lg shadow-md">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {isEditing ? "Edit Template" : "Create New Template"}
-          </h2>
+        <div className="flex items-center justify-between border-b-2">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">
+              {isEditing ? "Edit Template" : "Create New Template"}
+            </h2>
+          </div>
+          <div className="px-6 py-4 border-b border-gray-200">
+            <Button text="start to send message" loadingText="sending..." onClick={() => { }} isLoading={false} className="bg-blue-600 text-white font-semibold rounded-md" />
+          </div>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

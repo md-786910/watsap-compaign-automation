@@ -10,6 +10,7 @@ const {
   getSheet,
   createTemplate,
   getTemplates,
+  deleteSheet,
 } = require("../controller/generalController");
 const { upload } = require("../helper/multer");
 const generalRouter = express.Router();
@@ -32,6 +33,7 @@ generalRouter
 generalRouter
   .route("/process-sheet")
   .post(upload.single("file"), processSheet)
+  .delete(deleteSheet)
   .get(getSheet);
 
 // @template

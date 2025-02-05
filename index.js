@@ -78,16 +78,14 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 // Listen for nodemon restart event
-process.once('SIGUSR2', () => {
+process.once("SIGUSR2", () => {
   // @clear client
-   WatsappSession.updateMany({status:"inactive"}).then((data)=>{
-    console.log(data)
-   })
+  WatsappSession.updateMany({ status: "inactive" }).then((data) => {
+    console.log(data);
+  });
   disconnectClient();
-  console.log("coieqwuoeq oweiqy ioryiowyrowyiroy oiewyroiweyoriyweio yrowey")
-  //update session 
-
-  
+  console.log("coieqwuoeq oweiqy ioryiowyrowyiroy oiewyroiweyoriyweio yrowey");
+  //update session
 
   // server.close(() => {
   //   console.log('Server closed');

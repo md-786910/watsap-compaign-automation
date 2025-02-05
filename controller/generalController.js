@@ -66,20 +66,23 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         message: "connected to whatsApp successfully",
         status: "connected",
       });
-      if (!session) {
-        session.status = "active";
-        session.user = client.info?.pushname;
-        session.phone_number = client.info?.wid?.user;
-        session.device = client.info?.platform;
-        await session.save();
-      } else {
-        //@update only session
-        session.status = "active";
-        session.user = client.info?.pushname;
-        session.phone_number = client.info?.wid?.user;
-        session.device = client.info?.platform;
-        await session.save();
-      }
+      await WatsappSession.findOneAndUpdate(
+        { session_id },
+        {
+          $set: {
+            status: "active",
+            user: client.info?.pushname,
+            phone_number: client.info?.wid?.user,
+            device: client.info?.platform,
+          },
+        },
+        { new: true, upsert: true } // Return the updated document
+      );
+      session.status = "active";
+      session.user = client.info?.pushname;
+      session.phone_number = client.info?.wid?.user;
+      session.device = client.info?.platform;
+      await session.save();
     });
 
     // Handle authentication failure
@@ -245,7 +248,6 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
     if (
       await processedSheet.findOne({ phone_number: `+91${data.phone_number}` })
     ) {
-      console.log("Skipping, already exists", data);
       continue;
     }
 
@@ -279,57 +281,53 @@ exports.getSheet = CatchAsync(async (req, res, next) => {
   });
 });
 
+exports.deleteSheet = CatchAsync(async (req, res, next) => {
+  //@delete all
+  await processedSheet.deleteMany({});
+  res.status(200).json({
+    message: "sheet deleted successfully",
+    status: true,
+  });
+});
+
 // Create or Update Template
 exports.createTemplate = CatchAsync(async (req, res, next) => {
   const { name, content } = req.body;
-  if (!name || !content) {
-    return next(new AppError("Name and content are required", 200));
-  }
-  const { imageUrl = null, documentUrl = null, audioUrl = null } = req.files;
-  console.log({ imageUrl, documentUrl, audioUrl });
 
-  const getTemplateExist = await Template.findOne({ name });
-  let template = getTemplateExist;
+  // Validate required fields
+  if (!name || !content) {
+    return next(new AppError("Name and content are required", 400)); // Changed status code to 400 for bad request
+  }
+
+  // Extract file URLs from request files
+  const { imageUrl, documentUrl, audioUrl } = req.files;
   const fileObj = {
     imageUrl: imageUrl?.[0]?.path,
     documentUrl: documentUrl?.[0]?.path,
     audioUrl: audioUrl?.[0]?.path,
-    imageName: imageUrl && fileNameSave(imageUrl?.[0]),
-    audioName: audioUrl && fileNameSave(audioUrl?.[0]),
-    documentName: documentUrl && fileNameSave(documentUrl?.[0]),
+    imageName: imageUrl && fileNameSave(imageUrl[0]),
+    audioName: audioUrl && fileNameSave(audioUrl[0]),
+    documentName: documentUrl && fileNameSave(documentUrl[0]),
   };
-  if (!getTemplateExist) {
-    template = await Template.create({
-      name,
-      content,
-      ...fileObj,
-    });
-  } else {
-    //@update
-    console.log({ template });
-    const fileObj = {
-      name,
-      content,
-      imageUrl: imageUrl?.[0]?.path || template.imageUrl,
-      documentUrl: documentUrl?.[0]?.path || template.documentUrl,
-      audioUrl: audioUrl?.[0]?.path || template.audioUrl,
-      imageName: imageUrl ? fileNameSave(imageUrl?.[0]) : template.imageName,
-      audioName: audioUrl ? fileNameSave(audioUrl?.[0]) : template.audioName,
-      documentName: documentUrl
-        ? fileNameSave(documentUrl?.[0])
-        : template.documentName,
-    };
+
+  // Check if template already exists
+  let template = await Template.findOne({ name });
+
+  if (template) {
+    // Update existing template
     template = await Template.findOneAndUpdate(
-      { _id: getTemplateExist._id },
-      {
-        name,
-        content,
-        ...fileObj,
-      }
+      { _id: template._id },
+      { name, content, ...fileObj },
+      { new: true } // Return the updated document
     );
+  } else {
+    // Create new template
+    template = await Template.create({ name, content, ...fileObj });
   }
+
+  // Send response
   res.status(200).json({
-    message: "Template created successfully",
+    message: "Template created/updated successfully",
     status: true,
     data: template,
   });

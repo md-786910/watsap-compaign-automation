@@ -28,7 +28,7 @@ export const Template = () => {
     const [imagePreviewUrl, setImagePreviewUrl] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
-    const {handleStartMessaging,isLoading} = useWhatsApp()
+    const { handleStartMessaging, isLoading } = useWhatsApp()
     const { data, loading: dataLoading, error: fetchError } = useFetch("/template", {
         method: "GET"
     }, [loading])
@@ -157,9 +157,9 @@ export const Template = () => {
             ...currentTemplate,
             name: data?.name,
             content: data?.content,
-            imageFile: `http://localhost:3000/uploads/${data?.imageName}`,
-            documentFile: "http://localhost:3000/uploads/doc.pdf",
-            audioFile: "http://localhost:3000/uploads/audio.mp3"
+            imageFile: data?.imageName && `http://localhost:3000/uploads/${data?.imageName}`,
+            documentFile: data?.documentName && "http://localhost:3000/uploads/doc.pdf",
+            audioFile: data?.audioName && "http://localhost:3000/uploads/audio.mp3"
         })
     }, [data])
 

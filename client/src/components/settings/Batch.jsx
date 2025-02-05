@@ -14,7 +14,7 @@ function Batch() {
         {
             method: "GET",
         },
-        ["name"]);
+        ["name", isLoading]);
 
     const [settings, setSettings] = useState({
         message_delay: 0,

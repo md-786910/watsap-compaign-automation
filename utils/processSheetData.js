@@ -14,7 +14,11 @@ class ProcessSheetManager {
     return {
       name: row["name"] || row["Name"] || "Unknown",
       phone_number:
-        row["phone_number"] || row["Phone Number"] || row["Mobile"] || "N/A",
+        row["phone_number"] ||
+        row["Phone Number"] ||
+        row["phone number"] ||
+        row["Mobile"] ||
+        "N/A",
     };
   }
 

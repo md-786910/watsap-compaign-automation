@@ -4,6 +4,7 @@ import { ReadSheet } from "./components/sheet/readSheet";
 import { ReadTemplate } from "./components/template/readTemplate";
 import AppLayout from "./components/AppLayout";
 import { Settings } from "./components/settings/Setting";
+import { Template } from "./components/template/NewTemplate";
 
 // Define your routes
 const router = createBrowserRouter([
@@ -18,7 +19,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/template",
-        element: <ReadTemplate />,
+        element: <Template />,
       },
       {
         path: "/sheet",

@@ -8,6 +8,9 @@ const {
   getWatsapBatch,
   processSheet,
   getSheet,
+  createTemplate,
+  getTemplates,
+  deleteSheet,
 } = require("../controller/generalController");
 const { upload } = require("../helper/multer");
 const generalRouter = express.Router();
@@ -30,6 +33,20 @@ generalRouter
 generalRouter
   .route("/process-sheet")
   .post(upload.single("file"), processSheet)
+  .delete(deleteSheet)
   .get(getSheet);
+
+// @template
+generalRouter
+  .route("/template")
+  .post(
+    upload.fields([
+      { name: "imageUrl", maxCount: 1 },
+      { name: "documentUrl", maxCount: 1 },
+      { name: "audioUrl", maxCount: 1 },
+    ]),
+    createTemplate
+  )
+  .get(getTemplates);
 
 module.exports = generalRouter;

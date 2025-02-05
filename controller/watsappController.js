@@ -5,15 +5,11 @@ const path = require("path");
 const { delay, RECIPIENTS } = require("../utils/common");
 const { emitIOMessage } = require("../config/socketManager");
 const { getClient } = require("../config/watsappConfig");
-// Load media files
-const bannerMedia = MessageMedia.fromFilePath(
-  path.join(__dirname, "../files", "c.jpg")
-);
-const audioMedia = MessageMedia.fromFilePath(
-  path.join(__dirname, "../files", "b.mp3")
-);
+const processedSheet = require("../model/processed_sheet.model");
+const Template = require("../model/template.model");
 
-exports.LoadCampaingAndStarted = async (req, res) => {
+
+exports.LoadCampaingAndStarted = async (req, res, next) => {
   const client = getClient();
   // Check if client is ready
   if (!client) {
@@ -21,10 +17,52 @@ exports.LoadCampaingAndStarted = async (req, res) => {
       "WhatsApp client not connected. Please scan QR code or wait for connection"
     );
     return res.status(503).json({
-      error: "WhatsApp client not connected",
-      details: "Please scan QR code or wait for connection",
+      message: "Please connect to WhatsApp client for sending message. Not connected",
+      status: false,
     });
   }
+
+  /*
+  1.check : Template is available(content,(Optional[Audio,documents,images]))
+  2. Check Sheet is available with min count is 1
+  */
+  const template = await Template.findOne({});
+  if (!template) {
+    return res.status(200).json({
+      message: "Please create template first",
+      status: false,
+    });
+  }
+
+  const RECIPIENTS = await processedSheet.find({});
+  if (RECIPIENTS?.length === 0) {
+    return res.status(200).json({
+      message: "Please upload sheet to sending message",
+      status: false,
+    });
+  }
+
+// @load file
+ let bannerMedia = null;
+ let audioMedia = null;
+ let documentMedia = null;
+  if(template?.imageUrl){
+    bannerMedia = MessageMedia.fromFilePath(
+      path.join(__dirname, "../uploads/", template.imageName)
+    );
+  }
+  if(template?.audioUrl){
+    audioMedia = MessageMedia.fromFilePath(
+      path.join(__dirname, "../uploads/", "audio.mp3")
+    );
+  }
+  if(template?.documentUrl){
+    documentMedia = MessageMedia.fromFilePath(
+      path.join(__dirname, "../uploads/", "doc.pdf")
+    );
+  }
+
+  const messageContent = template?.content;
 
   // Set headers for proper streaming
   res.setHeader("Content-Type", "application/json");
@@ -40,8 +78,13 @@ exports.LoadCampaingAndStarted = async (req, res) => {
     );
 
     for (let i = 0; i < RECIPIENTS.length; i += BATCH_CONFIG.BATCH_SIZE) {
-      const batch = RECIPIENTS.slice(i, i + BATCH_CONFIG.BATCH_SIZE);
-      await processBatch(batch, bannerMedia, audioMedia, messageLogs);
+      let batch = RECIPIENTS.slice(i, i + BATCH_CONFIG.BATCH_SIZE);
+      batch = batch.map((bat) => ({
+        id: bat._id,
+        name: bat.name,
+        phoneNumber: bat.phone_number,
+      }));
+      await processBatch({batch, bannerMedia, audioMedia,documentMedia, messageLogs,messageContent});
       processedCount += batch.length;
       emitIOMessage(
         "Processing " + processedCount + " of " + RECIPIENTS.length

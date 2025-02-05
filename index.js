@@ -1,20 +1,25 @@
 require("dotenv").config();
 const { dbConnect } = require("./config/connection");
-// const { initSocket } = require("./config/socketManager");
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
+const path = require("path");
+
 const app = express();
 const server = http.createServer(app);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 const watsappRouter = require("./routes/watsappRoute");
 const generalRouter = require("./routes/generalRoutes");
-const { initSocket, getIO } = require("./config/socketManager");
+const { initSocket } = require("./config/socketManager");
+const fileRouter = require("./routes/file.route");
+const { disconnectClient } = require("./config/watsappConfig");
+const WatsappSession = require("./model/watsap_session.model");
 
-const router = express.Router();
+// ✅ Middleware for JSON and Form Data Parsing
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+// ✅ CORS Configuration
 app.use(
   cors({
     origin: true,
@@ -24,48 +29,66 @@ app.use(
   })
 );
 
-// errorHandler.js
+// ✅ Move static path serving **ABOVE** the API routes
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+console.log("Static folder path:", path.join(__dirname, "uploads"));
+
+const router = express.Router();
+
+// ✅ Mount API routes
+app.use("/api/v1", router);
+router.use(watsappRouter);
+router.use(generalRouter);
+router.use("/file", fileRouter);
+
+// ✅ Global Error Handler
 const errorHandler = (err, req, res, next) => {
-  const errorInfo = {
+  res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
     status: err.status || 500,
-    stack: err.stack, // Captures the file, line number, and full trace
-  };
-
-  res.status(errorInfo.status).json(errorInfo);
+    stack: err.stack,
+  });
 };
 
-app.use("/api/v1", router);
-
-// Defined router for application
-router.use(watsappRouter);
-router.use(generalRouter);
-
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, async () => {
-  // Initialize socket.io
-  await initSocket(server);
-  await dbConnect();
-
-  console.log(`Server running on port ${PORT}`);
-});
-
-// Unknown Route Handler
+// ✅ Unknown Route Handler (Must be after all valid routes)
 app.use((req, res, next) => {
   next(new Error("Route Not Found", 404));
 });
 
-app.use(errorHandler); // Place at the end after all routes
+// ✅ Use the error handler
+app.use(errorHandler);
 
+// ✅ Start server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, async () => {
+  await initSocket(server);
+  await dbConnect();
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+// ✅ Graceful Error Handling
 process.on("uncaughtException", (err) => {
   console.error(`[Uncaught Exception]: ${err.message}`);
-  // Optional: Shut down gracefully
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error(`[Unhandled Rejection]: ${reason}`);
-  // Optional: Shut down gracefully
+});
+
+// Listen for nodemon restart event
+process.once("SIGUSR2", () => {
+  // @clear client
+  WatsappSession.updateMany({ status: "inactive" }).then((data) => {
+    console.log(data);
+  });
+  disconnectClient();
+  console.log("coieqwuoeq oweiqy ioryiowyrowyiroy oiewyroiweyoriyweio yrowey");
+  //update session
+
+  // server.close(() => {
+  //   console.log('Server closed');
+  //   process.kill(process.pid, 'SIGUSR2');
+  // });
 });

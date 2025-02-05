@@ -12,7 +12,8 @@ const AppError = require("../utils/AppError");
 const CatchAsync = require("../utils/CatchAsync");
 const path = require("path");
 const ProcessSheetManager = require("../utils/processSheetData");
-const { cleanupFile } = require("../helper/multer");
+const { cleanupFile, fileNameSave } = require("../helper/multer");
+const Template = require("../model/template.model");
 const fs = require("fs").promises;
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
   const existingClient = getClient();
@@ -65,20 +66,23 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         message: "connected to whatsApp successfully",
         status: "connected",
       });
-      if (!session) {
-        session.status = "active";
-        session.user = client.info?.pushname;
-        session.phone_number = client.info?.wid?.user;
-        session.device = client.info?.platform;
-        await session.save();
-      } else {
-        //@update only session
-        session.status = "active";
-        session.user = client.info?.pushname;
-        session.phone_number = client.info?.wid?.user;
-        session.device = client.info?.platform;
-        await session.save();
-      }
+      await WatsappSession.findOneAndUpdate(
+        { session_id },
+        {
+          $set: {
+            status: "active",
+            user: client.info?.pushname,
+            phone_number: client.info?.wid?.user,
+            device: client.info?.platform,
+          },
+        },
+        { new: true, upsert: true } // Return the updated document
+      );
+      session.status = "active";
+      session.user = client.info?.pushname;
+      session.phone_number = client.info?.wid?.user;
+      session.device = client.info?.platform;
+      await session.save();
     });
 
     // Handle authentication failure
@@ -244,12 +248,13 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
     if (
       await processedSheet.findOne({ phone_number: `+91${data.phone_number}` })
     ) {
-      console.log("Skipping, already exists");
       continue;
     }
 
-    const phoneNumberProcess = data.phone_number?.startsWith("+91")
-      ? data.phone_number
+    const phoneNumberProcess = String(data?.phone_number || "").startsWith(
+      "+91"
+    )
+      ? String(data.phone_number)
       : `+91${data.phone_number}`;
 
     await processedSheet.create({
@@ -273,5 +278,67 @@ exports.getSheet = CatchAsync(async (req, res, next) => {
     message: "sheet fetched successfully",
     status: true,
     data: sheet,
+  });
+});
+
+exports.deleteSheet = CatchAsync(async (req, res, next) => {
+  //@delete all
+  await processedSheet.deleteMany({});
+  res.status(200).json({
+    message: "sheet deleted successfully",
+    status: true,
+  });
+});
+
+// Create or Update Template
+exports.createTemplate = CatchAsync(async (req, res, next) => {
+  const { name, content } = req.body;
+
+  // Validate required fields
+  if (!name || !content) {
+    return next(new AppError("Name and content are required", 400)); // Changed status code to 400 for bad request
+  }
+
+  // Extract file URLs from request files
+  const { imageUrl, documentUrl, audioUrl } = req.files;
+  const fileObj = {
+    imageUrl: imageUrl?.[0]?.path,
+    documentUrl: documentUrl?.[0]?.path,
+    audioUrl: audioUrl?.[0]?.path,
+    imageName: imageUrl && fileNameSave(imageUrl[0]),
+    audioName: audioUrl && fileNameSave(audioUrl[0]),
+    documentName: documentUrl && fileNameSave(documentUrl[0]),
+  };
+
+  // Check if template already exists
+  let template = await Template.findOne({ name });
+
+  if (template) {
+    // Update existing template
+    template = await Template.findOneAndUpdate(
+      { _id: template._id },
+      { name, content, ...fileObj },
+      { new: true } // Return the updated document
+    );
+  } else {
+    // Create new template
+    template = await Template.create({ name, content, ...fileObj });
+  }
+
+  // Send response
+  res.status(200).json({
+    message: "Template created/updated successfully",
+    status: true,
+    data: template,
+  });
+});
+
+// Get All Templates
+exports.getTemplates = CatchAsync(async (req, res, next) => {
+  const templates = await Template.findOne({}).sort({ createdAt: -1 });
+  res.status(200).json({
+    message: "Templates fetched successfully",
+    status: true,
+    data: templates,
   });
 });

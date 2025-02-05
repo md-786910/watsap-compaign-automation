@@ -28,7 +28,17 @@ const RECIPIENTS = [
   },
   {
     id: 2,
-    phoneNumber: "+916201991257",
+    phoneNumber: "+918083964947",
+    name: `user`,
+  },
+  {
+    id: 2,
+    phoneNumber: "+917519134978",
+    name: `user`,
+  },
+  {
+    id: 2,
+    phoneNumber: "+917519131228",
     name: `user`,
   },
 ];

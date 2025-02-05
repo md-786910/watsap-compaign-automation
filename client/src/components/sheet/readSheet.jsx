@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Upload,
   FileSpreadsheet,
   Eye,
   Trash2,
@@ -10,25 +9,26 @@ import Loader from "../Loader";
 import axiosInstance from "../../config/axios";
 import showToast from "../../helpers/Toast";
 import { useFetch } from "../../hooks/useFetch";
+import Button from "../../utils/button";
 
 export const ReadSheet = () => {
   // const [sheets, setSheets] = useState([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [selectedSheet, setSelectedSheet] = useState(null);
+  const [file, setFile] = useState(null);
 
   // @fetch sheets
   const { data: sheets, loading, error: sheetError } = useFetch("/process-sheet", {
     method: "GET",
-  }, []);
+  }, [isUploading]);
 
 
-  const handleFileUpload = async (
-    event
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleFileUpload = async () => {
+    if (!file) {
+      showToast("please select a file", "warning");
+      return;
+    };
     // Check file type
     const validTypes = [
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
@@ -42,7 +42,6 @@ export const ReadSheet = () => {
 
     const formData = new FormData();
     formData.append("file", file);
-
     try {
       setIsUploading(true);
       setError("");
@@ -53,6 +52,9 @@ export const ReadSheet = () => {
       })
       if (resp.status === 200) {
         showToast("Sheet uploaded successfully", "success",);
+
+        setFile(null);
+
       }
 
     } catch (error) {
@@ -63,10 +65,18 @@ export const ReadSheet = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    setSheets((prev) => prev.filter((sheet) => sheet.id !== id));
-    if (selectedSheet?.id === id) {
-      setSelectedSheet(null);
+  const handleDelete = async () => {
+    try {
+      setIsUploading(true);
+      const resp = await axiosInstance.delete("/process-sheet");
+      if (resp.status === 200) {
+        showToast("Sheet deleted successfully", "success");
+        setSelectedSheet(null);
+      }
+    } catch (error) {
+      showToast(error, "error");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -80,27 +90,45 @@ export const ReadSheet = () => {
     return showToast(sheetError, "error");
   }
 
+  if (loading) {
+    return <Loader />
+  }
+
   return (
     <div className="space-y-6">
       {/* Upload Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-semibold mb-4">Upload Sheet (Max size 5mb)</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold mb-4">Upload Sheet (Max size 5mb)</h2>
+          <button onClick={() => {
+            window.open("https://docs.google.com/spreadsheets/d/131N2EzYA-R_OhR2_3Bnxqui5JwGxEX8P/edit?usp=sharing&ouid=105436255648647026912&rtpof=true&sd=true")
+          }} className="bg-yellow-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300">
+            Download sample sheet
+          </button>
+        </div>
         <div className="flex items-center space-x-4">
           <input
             type="file"
-            onChange={handleFileUpload}
+            name="file"
+            onChange={(e) => {
+              setFile(e.target.files[0])
+            }}
             accept=".xlsx,.xls,.csv"
-            className="hidden"
+            className=""
             id="file-upload"
           />
           <label
             htmlFor="file-upload"
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+            className="flex items-center p-1 rounded-md border  cursor-pointer transition-colors"
           >
-            <Upload className="w-5 h-5 mr-2" />
-            Choose File
+            Select new file(csv,xlsx)
           </label>
-          {isUploading && <span className="text-gray-600">Uploading...</span>}
+        </div>
+        <div className="mt-3">
+          <Button text="Upload" loadingText="saving..."
+            onClick={() => handleFileUpload()} className="bg-blue-600 text-white rounded-lg" isLoading={isUploading} />
+
+
         </div>
         {error && (
           <div className="mt-3 flex items-center text-red-600">
@@ -108,9 +136,7 @@ export const ReadSheet = () => {
             {error}
           </div>
         )}
-        {
-          isUploading && <Loader />
-        }
+
       </div>
 
       {/* Sheets List */}
@@ -171,7 +197,7 @@ export const ReadSheet = () => {
                           <Eye className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(sheet._id)}
+                          onClick={() => handleDelete()}
                           className="text-red-600 hover:text-red-800"
                           title="Delete Sheet"
                         >

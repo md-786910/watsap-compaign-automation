@@ -7,38 +7,35 @@ const uploadDir = "uploads/";
 // Ensure upload directory exists
 fs.ensureDirSync(uploadDir);
 
+const fileNameSave = (file) => {
+  const ext = file.originalname.split(".").pop();
+  if (file.fieldname === "imageUrl") {
+    fileSave = "image." + ext;
+  } else if (file.fieldname === "documentUrl") {
+    fileSave = "doc." + ext;
+  } else if (file.fieldname === "audioUrl") {
+    fileSave = "audio." + ext;
+  } else {
+    fileSave = file.originalname;
+  }
+  return fileSave;
+};
+
 // Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
+
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    let fileSave = fileNameSave(file);
+    cb(null, `${fileSave}`);
   },
 });
-
-// File Validation: Only accept CSV, XLSX, and PDF
-const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = [
-    "text/csv",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/pdf",
-  ];
-
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error("Invalid file type. Only CSV, XLSX, and PDF are allowed."),
-      false
-    );
-  }
-};
 
 // Multer Upload Config with File Limit (Max: 5MB)
 const upload = multer({
   storage,
-  fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Limit
 });
 
@@ -49,4 +46,4 @@ const cleanupFile = (filePath) => {
     .catch((err) => console.error(`Error deleting file: ${err}`));
 };
 
-module.exports = { upload, cleanupFile };
+module.exports = { upload, cleanupFile, fileNameSave };

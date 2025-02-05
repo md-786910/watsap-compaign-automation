@@ -62,7 +62,6 @@ export const Dashboard = () => {
   useEffect(() => {
     // Connect to the socket
     socket.connect();
-
     socket.on("message", (data) => {
       console.log("Connected to server", data);
       setIncoming(data);
@@ -161,12 +160,12 @@ export const Dashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                        ${log.status === "Success"
+                        className={`px-2 inline-flex text-xs leading-5 font-bold rounded-full
+                        ${log.status === "success"
                             ? "bg-green-100 text-green-800"
-                            : log.status === "Error"
+                            : log.status === "error"
                               ? "bg-red-100 text-red-800"
-                              : log.status === "Skipped"
+                              : log.status === "skipped"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-purple-100 text-purple-800"
                           }`}
@@ -175,7 +174,7 @@ export const Dashboard = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.reason || log.error || "-"}
+                      {log?.reason?.substring(0, 100) || log?.error?.substring(0, 100) || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formateDate(log.createdAt)}

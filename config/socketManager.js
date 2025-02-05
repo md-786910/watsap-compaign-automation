@@ -42,8 +42,13 @@ const getIO = () => {
 
 const emitIOMessage = (msg) => {
   if (io) {
-    io.emit(SOCKET.MESSAGE, msg);
+    io.emit("message", msg);
+  }
+};
+const emitIOMessageStats = (msg) => {
+  if (io) {
+    io.emit("listen_message", msg);
   }
 };
 // @initialize it when start from client side
-module.exports = { initSocket, getIO, emitIOMessage };
+module.exports = { initSocket, getIO, emitIOMessage,emitIOMessageStats };

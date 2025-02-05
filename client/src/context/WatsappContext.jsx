@@ -44,9 +44,25 @@ export const WhatsAppProvider = ({ children }) => {
         }
     };
 
+    // start to send message
+    const handleStartMessaging = async()=>{
+        setIsLoading(true);
+        try {
+            const resp = await axiosInstance.get("/start-messaging");
+            if (resp.status === 200) {
+                showToast(resp.data.message, "success");
+            }
+        } catch (error) {
+            showToast(error, "error");
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }
+
     return (
         <WhatsAppContext.Provider
-            value={{ setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp }}
+            value={{ setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp,handleStartMessaging }}
         >
             {children}
         </WhatsAppContext.Provider>

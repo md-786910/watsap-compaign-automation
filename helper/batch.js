@@ -1,8 +1,7 @@
 const { CODESTATUS } = require("../config/status");
-const { createTemplate } = require("../template/watsapTemplate");
 const { formatPhoneNumber, insertLogsToDb, delay } = require("../utils/common");
 const MessageLog = require("../model/message.model");
-const { emitIOMessage } = require("../config/socketManager");
+const { emitIOMessage, getIO, emitIOMessageStats } = require("../config/socketManager");
 const { getClient } = require("../config/watsappConfig");
 // Configuration
 const BATCH_CONFIG = {
@@ -13,28 +12,41 @@ const BATCH_CONFIG = {
   RETRY_DELAY: 5000,
   SEND_ONE_TIME_COUNT: 2, //!@ At MAX 2 times
 };
+let messageCount = 1;
 // Send message with retry mechanism
-async function sendMessageWithRetry(
+async function sendMessageWithRetry({
   chatId,
   name,
   bannerMedia,
   audioMedia,
+  documentMedia,
   client,
-  retryCount = 0
-) {
+  messageContent,
+  retryCount = 0,
+}) {
   try {
     // Send template with banner
-    const messageText = createTemplate(name);
-    await client.sendMessage(chatId, bannerMedia, {
-      caption: messageText,
-      linkPreview: true,
-    });
-
+    const messageText = messageContent;
+    if(bannerMedia) {
+      await client.sendMessage(chatId, bannerMedia, {
+        caption: messageText,
+        linkPreview: true,
+      });
+    }else{
+      await client.sendMessage(chatId, messageText);
+    }
+   
     // Wait briefly before sending audio
     await delay(1000);
 
     // Send audio file
-    await client.sendMessage(chatId, audioMedia);
+    if(audioMedia) {
+      await client.sendMessage(chatId, audioMedia);
+    }
+    if(documentMedia) {
+      await client.sendMessage(chatId, documentMedia);
+    }
+
 
     return true;
   } catch (error) {
@@ -46,21 +58,32 @@ async function sendMessageWithRetry(
         status: CODESTATUS.RETRY,
         reason: `Retrying for contact ${chatId}`,
       });
-      return sendMessageWithRetry(
+      return sendMessageWithRetry({
         chatId,
         name,
         bannerMedia,
         audioMedia,
+        documentMedia,
         client,
-        retryCount + 1
-      );
+        messageContent,
+        retryCount: retryCount + 1,
+      });
     }
     throw error;
   }
 }
 
 // Process messages in batches
-async function processBatch(batch, bannerMedia, audioMedia, messageLogs) {
+async function processBatch(
+ {
+  batch,
+  bannerMedia,
+  audioMedia,
+  documentMedia,
+  messageLogs,
+  messageContent
+ }
+) {
   const client = getClient();
   if (!client) {
     throw new Error("WhatsApp client not connected");
@@ -91,7 +114,7 @@ async function processBatch(batch, bannerMedia, audioMedia, messageLogs) {
         continue;
       }
 
-      if (!phoneNumber.startsWith("+91")) {
+      if (!phoneNumber.startsWith("+91") || phoneNumber=="+91N/A") {
         messageLogs.push({
           phoneNumber,
           status: CODESTATUS.FAILED,
@@ -126,26 +149,28 @@ async function processBatch(batch, bannerMedia, audioMedia, messageLogs) {
         emitIOMessage(
           `Skipping not registered on watsapp ${recipient.phoneNumber}`
         );
-
         continue;
       }
 
       // Send message with banner and audio
-      const result = await sendMessageWithRetry(
+      const result = await sendMessageWithRetry({
         chatId,
         name,
         bannerMedia,
         audioMedia,
-        client
-      );
+        documentMedia,
+        client,
+        messageContent
+      });
       if (result) {
+        messageCount++;
         await insertLogsToDb({
           phoneNumber: chatId,
           status: CODESTATUS.SUCCESS,
           reason: "Message sent successfully",
           count: 1,
         });
-        emitIOMessage(`Message send Success to ${recipient.phoneNumber}`);
+        emitIOMessageStats(`${messageCount} message sent : ${recipient.phoneNumber}`);
       }
       messageLogs.push({ phoneNumber, status: "success" });
       await delay(BATCH_CONFIG.MESSAGE_DELAY);

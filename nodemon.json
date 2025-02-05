@@ -1,0 +1,6 @@
+{
+    "events": {
+      "restart": "echo 'Server is restarting...'",
+      "crash": "echo 'Server crashed!'"
+    }
+  }

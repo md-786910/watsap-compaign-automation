@@ -6,7 +6,7 @@ const {
 const { getIO } = require("../config/socketManager");
 const watsappRouter = express.Router();
 
-watsappRouter.get("/send", LoadCampaingAndStarted);
+watsappRouter.get("/start-messaging", LoadCampaingAndStarted);
 watsappRouter.get("/logs", getWatsappCompaign);
 
 // Health check endpoint

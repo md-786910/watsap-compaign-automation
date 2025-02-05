@@ -6,6 +6,7 @@ import Button from '../../utils/button';
 import { useFetch } from '../../hooks/useFetch';
 import Loader from '../Loader';
 import { SERVER_FILE_API } from '../../utils/common';
+import { useWhatsApp } from '../../context/WatsappContext';
 
 
 
@@ -27,6 +28,7 @@ export const Template = () => {
     const [imagePreviewUrl, setImagePreviewUrl] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const {handleStartMessaging,isLoading} = useWhatsApp()
     const { data, loading: dataLoading, error: fetchError } = useFetch("/template", {
         method: "GET"
     }, [loading])
@@ -155,7 +157,7 @@ export const Template = () => {
             ...currentTemplate,
             name: data?.name,
             content: data?.content,
-            imageFile: "http://localhost:3000/uploads/image.png",
+            imageFile: `http://localhost:3000/uploads/${data?.imageName}`,
             documentFile: "http://localhost:3000/uploads/doc.pdf",
             audioFile: "http://localhost:3000/uploads/audio.mp3"
         })
@@ -176,7 +178,7 @@ export const Template = () => {
                         </h2>
                     </div>
                     <div className="px-6 py-4 border-b border-gray-200">
-                        <Button text="start to send message" loadingText="sending..." onClick={() => { }} isLoading={false} className="bg-blue-600 text-white font-semibold rounded-md" />
+                        <Button text="start to send message" loadingText="sending..." onClick={() => handleStartMessaging()} isLoading={isLoading} className="bg-blue-600 text-white font-semibold rounded-md" />
                     </div>
                 </div>
                 <div className="p-6">

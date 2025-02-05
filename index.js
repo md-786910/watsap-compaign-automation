@@ -12,6 +12,8 @@ const watsappRouter = require("./routes/watsappRoute");
 const generalRouter = require("./routes/generalRoutes");
 const { initSocket } = require("./config/socketManager");
 const fileRouter = require("./routes/file.route");
+const { disconnectClient } = require("./config/watsappConfig");
+const WatsappSession = require("./model/watsap_session.model");
 
 // ✅ Middleware for JSON and Form Data Parsing
 app.use(express.json());
@@ -73,4 +75,22 @@ process.on("uncaughtException", (err) => {
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error(`[Unhandled Rejection]: ${reason}`);
+});
+
+// Listen for nodemon restart event
+process.once('SIGUSR2', () => {
+  // @clear client
+   WatsappSession.updateMany({status:"inactive"}).then((data)=>{
+    console.log(data)
+   })
+  disconnectClient();
+  console.log("coieqwuoeq oweiqy ioryiowyrowyiroy oiewyroiweyoriyweio yrowey")
+  //update session 
+
+  
+
+  // server.close(() => {
+  //   console.log('Server closed');
+  //   process.kill(process.pid, 'SIGUSR2');
+  // });
 });

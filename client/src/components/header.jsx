@@ -1,28 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { Menu, MessageCircle, LogIn, LogOut, Save, Podcast } from "lucide-react";
+import {
+  Menu,
+  MessageCircle,
+  LogIn,
+  LogOut,
+  Save,
+  Podcast,
+} from "lucide-react";
 import socket from "../config/socketConfig";
 import axiosInstance from "../config/axios";
 import showToast from "../helpers/Toast";
 import Button from "../utils/button";
 import { useWhatsApp } from "../context/WatsappContext";
-export const Header = ({
-  isSidebarOpen,
-  setIsSidebarOpen,
-}) => {
+export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const { setIsConnected, setIsLoading, setConnectMessage, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp } = useWhatsApp();
-
+  const [messageStats, setMessageStats] = useState("");
+  const {
+    setIsConnected,
+    setIsLoading,
+    setConnectMessage,
+    connectMessage,
+    isConnected,
+    isLoading,
+    connectToWhatsApp,
+    disconnectFromWhatsApp,
+  } = useWhatsApp();
 
   useEffect(() => {
     socket.connect();
     // @listen for the 'watsapp_connected' event
     socket.on("watsapp_connected", (data) => {
       if (data) {
-        console.log({ data })
         setIsConnected(true);
         setConnectMessage(data.message);
-        setIsLoading(false)
+        setIsLoading(false);
       }
     });
 
@@ -30,8 +41,13 @@ export const Header = ({
       if (disconnected) {
         setIsConnected(false);
         setConnectMessage(message);
-        setIsLoading(false)
+        setIsLoading(false);
       }
+    });
+
+    // @listen message
+    socket.on("listen_message", (data) => {
+      setMessageStats(data);
     });
 
     //@refresh seesion
@@ -46,8 +62,6 @@ export const Header = ({
       socket.disconnect();
     };
   }, [socket]);
-
-
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
@@ -67,18 +81,31 @@ export const Header = ({
           </div>
         </div>
         <div className="text-center p-[0.5px] rounded-md">
-          <h4 className="flex items-center text-blue-900 text-xl" style={{ fontWeight: "450" }}>
+          <h4
+            className="flex items-center text-blue-900 text-xl"
+            style={{ fontWeight: "450" }}
+          >
             {connectMessage}
           </h4>
+          <span className="text-xs font-bold text-red-500">
+            {messageStats}{" "}
+          </span>
         </div>
         <div className="flex gap-4">
           {!isConnected && (
-
-            <Button Icon={Podcast} text="Connect to watsapp" loadingText="connecting..." onClick={() => connectToWhatsApp(
-              Math.random().toString(36).substring(2, 15) +
-              Math.random().toString(36).substring(2, 15)
-            )} isLoading={isLoading} className="bg-blue-600 text-white rounded-lg hover:bg-blue-700" />
-
+            <Button
+              Icon={Podcast}
+              text="Connect to watsapp"
+              loadingText="connecting..."
+              onClick={() =>
+                connectToWhatsApp(
+                  Math.random().toString(36).substring(2, 15) +
+                    Math.random().toString(36).substring(2, 15)
+                )
+              }
+              isLoading={isLoading}
+              className="bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            />
           )}
           {isConnected && (
             <button

@@ -73,8 +73,8 @@ function GetSession() {
                         <p>No active sessions found</p>
                     </div>
                 ) : (
-                    data?.map((session) => (
-                        <div key={session.id} className="p-6">
+                    data?.map((session, index) => (
+                        <div key={index} className="p-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <div className="flex-shrink-0">

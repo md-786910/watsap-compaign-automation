@@ -9,7 +9,8 @@ export const WhatsAppProvider = ({ children }) => {
     const [connectMessage, setConnectMessage] = useState("...");
     const [isConnected, setIsConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
+    const [showModal, setShowModal] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
     const connectToWhatsApp = async (session_id) => {
         try {
             setIsLoading(true);
@@ -45,7 +46,7 @@ export const WhatsAppProvider = ({ children }) => {
     };
 
     // start to send message
-    const handleStartMessaging = async()=>{
+    const handleStartMessaging = async () => {
         setIsLoading(true);
         try {
             const resp = await axiosInstance.get("/start-messaging");
@@ -60,9 +61,15 @@ export const WhatsAppProvider = ({ children }) => {
         }
     }
 
+    // @for auth model
+
+
     return (
         <WhatsAppContext.Provider
-            value={{ setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp,handleStartMessaging }}
+            value={{
+                setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp, handleStartMessaging,
+                setShowModal, showModal, setIsRegistering, isRegistering
+            }}
         >
             {children}
         </WhatsAppContext.Provider>

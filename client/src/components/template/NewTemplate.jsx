@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, Image as ImageIcon, Upload, FileText, Music2, X, } from 'lucide-react';
+import { AlertCircle, Image as ImageIcon, Upload, FileText, Music2, X, Copy, } from 'lucide-react';
 import axiosInstance from '../../config/axios';
 import showToast from '../../helpers/Toast';
 import Button from '../../utils/button';
 import { useFetch } from '../../hooks/useFetch';
 import Loader from '../Loader';
-import { SERVER_FILE_API } from '../../utils/common';
 import { useWhatsApp } from '../../context/WatsappContext';
+import Model from '../model/Model';
+import CustomTemplate from './CustomTemplate';
 
 
 
@@ -23,12 +24,16 @@ export const Template = () => {
         content: '',
         imageFile: '',
         documentFile: '',
-        audioFile: ''
+        audioFile: '',
+        isDefault: false
     });
+
+
     const [imagePreviewUrl, setImagePreviewUrl] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
-    const { handleStartMessaging, isLoading } = useWhatsApp()
+
+    const { handleStartMessaging, isLoading, setShowModal, showModal } = useWhatsApp()
     const { data, loading: dataLoading, error: fetchError } = useFetch("/template", {
         method: "GET"
     }, [loading])
@@ -112,6 +117,7 @@ export const Template = () => {
             formData.append('imageUrl', currentTemplate.imageFile);
             formData.append('documentUrl', currentTemplate.documentFile);
             formData.append('audioUrl', currentTemplate.audioFile);
+            formData.append('isDefault', currentTemplate.isDefault);
 
             const resp = await axiosInstance.post('/template', formData, {
                 headers: {
@@ -136,12 +142,12 @@ export const Template = () => {
         setCurrentTemplate(prev => {
             const updated = { ...prev };
             if (type === 'image') {
-                updated.imageFile = undefined;
+                updated.imageFile = null;
                 setImagePreviewUrl('');
             } else if (type === 'document') {
-                updated.documentFile = undefined;
+                updated.documentFile = null;
             } else if (type === 'audio') {
-                updated.audioFile = undefined;
+                updated.audioFile = null;
             }
             return updated;
         });
@@ -159,9 +165,13 @@ export const Template = () => {
             content: data?.content,
             imageFile: data?.imageName && `http://localhost:3000/uploads/${data?.imageName}`,
             documentFile: data?.documentName && "http://localhost:3000/uploads/doc.pdf",
-            audioFile: data?.audioName && "http://localhost:3000/uploads/audio.mp3"
+            audioFile: data?.audioName && "http://localhost:3000/uploads/audio.mp3",
+            isDefault: data?.isDefault,
         })
     }, [data])
+
+
+
 
     return (
         <div className="space-y-6">
@@ -177,9 +187,28 @@ export const Template = () => {
                             Create New Template
                         </h2>
                     </div>
-                    <div className="px-6 py-4 border-b border-gray-200">
+                    <button
+                        onClick={() => setShowModal(!showModal)}
+                        className="flex items-center px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                    >
+                        <>
+                            <Copy className="w-5 h-5 mr-2" />
+                            Use Pre-built
+                        </>
+                    </button>
+                    {
+                        (showModal) && <Model width={"7xl"} setShowModal={setShowModal} onClick={() => { }}
+                            style={{
+                                height: "90vh",
+                                overflowY: "scroll",
+                            }}
+                            text="Select Template"
+                            Component={() => <CustomTemplate setCurrentTemplate={setCurrentTemplate} setImagePreviewUrl={setImagePreviewUrl} setShowModal={setShowModal} />} />
+                    }
+
+                    {/* <div className="px-6 py-4 border-b border-gray-200">
                         <Button text="start to send message" loadingText="sending..." onClick={() => handleStartMessaging()} isLoading={isLoading} className="bg-blue-600 text-white font-semibold rounded-md" />
-                    </div>
+                    </div> */}
                 </div>
                 <div className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -329,7 +358,25 @@ export const Template = () => {
 
                         {/* Preview Section */}
                         <div>
-                            <h3 className="text-sm font-medium text-gray-700 mb-3">WhatsApp Preview</h3>
+                            <div className='flex items-center justify-between mb-4'>
+                                <h3 className="text-sm font-medium text-gray-700">WhatsApp Preview</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">Set template as default</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            onChange={(e) => setCurrentTemplate(prev => ({
+                                                ...prev,
+                                                isDefault: e.target.checked
+                                            }))}
+                                            checked={currentTemplate.isDefault}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div className="border border-gray-200 rounded-lg overflow-hidden bg-[#E5DDD5]">
                                 <div className="bg-[#075E54] px-4 py-2 text-white">
                                     <div className="flex items-center space-x-2">

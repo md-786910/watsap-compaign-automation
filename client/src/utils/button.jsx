@@ -15,7 +15,7 @@ const Button = ({
         <button
             onClick={onClick}
             disabled={isLoading}
-            className={`flex items-center px-4 py-2 disabled:opacity-80 disabled:cursor-not-allowed ${className}`}
+            className={`flex items-center px-4 py-1 disabled:opacity-80 disabled:cursor-not-allowed ${className}`}
             {...rest}
         >
             {isLoading ? (

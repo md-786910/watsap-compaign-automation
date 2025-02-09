@@ -1,38 +1,58 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { Dashboard } from "./components/dashboard";
 import { ReadSheet } from "./components/sheet/readSheet";
-import { ReadTemplate } from "./components/template/readTemplate";
 import AppLayout from "./components/AppLayout";
 import { Settings } from "./components/settings/Setting";
 import { Template } from "./components/template/NewTemplate";
+import { Home } from "./components/Home";
+import Schedular from "./components/schedular/Schedular";
+
+function DashboardLayout() {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+}
+
+
 
 // Define your routes
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppLayout />, // Wrap all routes in a layout component
-    errorElement: <h1>Not found</h1>, // Handle 404 errors
+    element: <Home />, // Directly render Home at "/"
+    errorElement: <h1>Not found</h1>,
+  },
+  {
+    path: "/dashboard",
+    element: <DashboardLayout />,
+    errorElement: <h1>Child route not found</h1>,
     children: [
       {
-        path: "/",
+        index: true,
         element: <Dashboard />,
       },
       {
-        path: "/template",
+        path: "template",
         element: <Template />,
       },
       {
-        path: "/sheet",
+        path: "sheet",
         element: <ReadSheet />,
       },
       {
-        path: "/settings",
+        path: "settings",
         element: <Settings />,
       },
-      // Add more routes here
+      {
+        path: "schedular",
+        element: <Schedular />,
+      },
     ],
   },
 ]);
+
 
 // Export the router for use in your app
 export default function AppRouter() {

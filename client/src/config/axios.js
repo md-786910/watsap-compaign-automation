@@ -40,7 +40,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access (e.g., redirect to login)
       console.error("Unauthorized access. Redirecting to login...");
-      window.location.href = "/login"; // Redirect to login page
+      // window.location.href = "/login"; // Redirect to login page
     }
     showToast(error.response?.data?.message || error.message, "error");
     return Promise.reject(error);

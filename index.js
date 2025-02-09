@@ -14,6 +14,7 @@ const { initSocket } = require("./config/socketManager");
 const fileRouter = require("./routes/file.route");
 const { disconnectClient } = require("./config/watsappConfig");
 const WatsappSession = require("./model/watsap_session.model");
+const userRoute = require("./routes/user.route");
 
 // ✅ Middleware for JSON and Form Data Parsing
 app.use(express.json());
@@ -39,6 +40,7 @@ const router = express.Router();
 app.use("/api/v1", router);
 router.use(watsappRouter);
 router.use(generalRouter);
+router.use("/user", userRoute);
 router.use("/file", fileRouter);
 
 // ✅ Global Error Handler
@@ -84,11 +86,9 @@ process.once("SIGUSR2", () => {
     console.log(data);
   });
   disconnectClient();
-  console.log("coieqwuoeq oweiqy ioryiowyrowyiroy oiewyroiweyoriyweio yrowey");
   //update session
-
-  // server.close(() => {
-  //   console.log('Server closed');
-  //   process.kill(process.pid, 'SIGUSR2');
-  // });
+  server.close(() => {
+    console.log("Server closed");
+    process.kill(process.pid, "SIGUSR2");
+  });
 });

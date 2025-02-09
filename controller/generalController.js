@@ -292,7 +292,7 @@ exports.deleteSheet = CatchAsync(async (req, res, next) => {
 
 // Create or Update Template
 exports.createTemplate = CatchAsync(async (req, res, next) => {
-  const { name, content } = req.body;
+  const { name, content, isDefault } = req.body;
 
   // Validate required fields
   if (!name || !content) {
@@ -302,12 +302,12 @@ exports.createTemplate = CatchAsync(async (req, res, next) => {
   // Extract file URLs from request files
   const { imageUrl, documentUrl, audioUrl } = req.files;
   const fileObj = {
-    imageUrl: imageUrl?.[0]?.path,
-    documentUrl: documentUrl?.[0]?.path,
-    audioUrl: audioUrl?.[0]?.path,
-    imageName: imageUrl && fileNameSave(imageUrl[0]),
-    audioName: audioUrl && fileNameSave(audioUrl[0]),
-    documentName: documentUrl && fileNameSave(documentUrl[0]),
+    imageUrl: imageUrl?.[0]?.path ?? null,
+    documentUrl: documentUrl?.[0]?.path ?? null,
+    audioUrl: audioUrl?.[0]?.path ?? null,
+    imageName: (imageUrl && fileNameSave(imageUrl[0])) ?? null,
+    audioName: (audioUrl && fileNameSave(audioUrl[0])) ?? null,
+    documentName: (documentUrl && fileNameSave(documentUrl[0])) ?? null,
   };
 
   // Check if template already exists
@@ -317,8 +317,8 @@ exports.createTemplate = CatchAsync(async (req, res, next) => {
     // Update existing template
     template = await Template.findOneAndUpdate(
       { _id: template._id },
-      { name, content, ...fileObj },
-      { new: true } // Return the updated document
+      { $set: { name, content, isDefault, ...fileObj } },
+      { new: true, upsert: true } // Return the updated document
     );
   } else {
     // Create new template

@@ -4,8 +4,9 @@ import {
   FileSpreadsheet,
   FileText,
   Settings,
+  Timer,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 
 const SidebarLink = ({
@@ -13,25 +14,28 @@ const SidebarLink = ({
   text,
   link,
   showText,
-}) => (
-  <NavLink
-    to={link}
-    className={({ isActive }) =>
-      `w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
-        ? "bg-blue-100 text-blue-600"
-        : "text-gray-600 hover:bg-gray-100"
-      }`
-    }
-  >
-    <Icon className="w-5 h-5" />
-    {showText && <span>{text}</span>}
-  </NavLink>
-);
+}) => {
+  const location = useLocation()
+  return (
+    <NavLink
+      to={link}
+      className={({ isActive }) =>
+        `w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive && location.pathname === link
+          ? "bg-blue-100 text-blue-600"
+          : "text-gray-600 hover:bg-gray-100"
+        }`
+      }
+    >
+      <Icon className="w-5 h-5" />
+      {showText && <span>{text}</span>}
+    </NavLink>
+  )
+};
 
 export const Sidebar = ({ isSidebarOpen }) => {
   return (
     <aside
-      className={`fixed top-16 left-0 bg-white h-[calc(100vh-4rem)] shadow-sm transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-16"
+      className={`fixed top-16 left-0 bg-white h-[calc(100vh-4rem)] shadow-sm transition-all  duration-300 ${isSidebarOpen ? "w-64" : "w-16"
         }`}
     >
       <nav className="p-4 space-y-2">
@@ -39,25 +43,31 @@ export const Sidebar = ({ isSidebarOpen }) => {
           icon={LayoutDashboard}
           text="Dashboard"
           showText={isSidebarOpen}
-          link=""
+          link="/dashboard"
+        />
+        <SidebarLink
+          icon={Timer}
+          text="Schedular"
+          showText={isSidebarOpen}
+          link="/dashboard/schedular"
         />
         <SidebarLink
           icon={FileSpreadsheet}
           text="Sheet"
           showText={isSidebarOpen}
-          link="/sheet"
+          link="/dashboard/sheet"
         />
         <SidebarLink
           icon={FileText}
           text="Template"
           showText={isSidebarOpen}
-          link="/template"
+          link="/dashboard/template"
         />
         <SidebarLink
           icon={Settings}
           text="Settings"
           showText={isSidebarOpen}
-          link="/settings"
+          link="/dashboard/settings"
         />
       </nav>
     </aside>

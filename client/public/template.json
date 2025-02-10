@@ -1,0 +1,72 @@
+[
+  {
+    "id": "welcome",
+    "name": "Welcome Message",
+    "category": "Onboarding",
+    "content": "Hello *{name}*! 👋\n  \n  Welcome to our community. We're excited to have you on board.\n  \n  Here's what you can expect from us:\n  • Regular updates about our products\n  • Exclusive offers and discounts\n  • Priority customer support\n  \n  Need help? Just reply to this message!\n  \n  Best regards,\n  {company_name} Team",
+    "imageUrl": "/public/templates/welcome.jpg"
+  },
+  {
+    "id": "order-confirmation",
+    "name": "Order Confirmation",
+    "category": "E-commerce",
+    "content": "Thank you for your order, *{name}*! 🛍️\n  \n  Order Details:\n  Order ID: #{order_id}\n  Total Amount: {amount}\n  \n  Your order is being processed and will be shipped soon. We'll keep you updated on the status.\n  \n  Track your order here: {tracking_link}\n  \n  Questions? We're here to help!",
+    "imageUrl": "/public/templates/order-confirmation.jpg"
+  },
+  {
+    "id": "appointment-reminder",
+    "name": "Appointment Reminder",
+    "category": "Healthcare",
+    "content": "Hi *{name}*,\n  \n  This is a reminder for your appointment:\n  📅 Date: {date}\n  ⏰ Time: {time}\n  📍 Location: {location}\n  \n  Please arrive 10 minutes early.\n  \n  Need to reschedule? Reply with \"RESCHEDULE\"\n  \n  See you soon!",
+    "imageUrl": "/public/templates/appointment-reminder.jpg"
+  },
+  {
+    "id": "special-offer",
+    "name": "Special Offer",
+    "category": "Marketing",
+    "content": "🎉 Special Offer for *{name}*!\n  \n  Don't miss out on our exclusive deal:\n  *{offer_description}*\n  \n  ✨ {discount}% OFF on all products\n  ⏰ Valid until: {end_date}\n  🎫 Use code: {promo_code}\n  \n  Shop now: {shop_link}\n  \n  Reply \"INFO\" for more details.",
+    "imageUrl": "/public/templates/special-offer.jpg"
+  },
+  {
+    "id": "feedback-request",
+    "name": "Feedback Request",
+    "category": "Customer Service",
+    "content": "Hello *{name}*,\n  \n  Thank you for choosing {company_name}! \n  \n  We'd love to hear about your experience. Could you take a moment to share your feedback?\n  \n  Rate your experience (1-5):\n  Simply reply with a number.\n  \n  Your feedback helps us serve you better!\n  \n  Best regards,\n  {company_name} Team",
+    "imageUrl": "/public/templates/feedback-request.jpg"
+  },
+  {
+    "id": "event-invitation",
+    "name": "Event Invitation",
+    "category": "Events",
+    "content": "🎈 You're Invited, *{name}*!\n  \n  Join us for: *{event_name}*\n  \n  📅 Date: {date}\n  ⏰ Time: {time}\n  📍 Venue: {location}\n  \n  What to expect:\n  • {highlight_1}\n  • {highlight_2}\n  • {highlight_3}\n  \n  RSVP by replying \"YES\" or \"NO\"\n  \n  We hope to see you there!",
+    "imageUrl": "/public/templates/event-invitation.jpg"
+  },
+  {
+    "id": "payment-reminder",
+    "name": "Payment Reminder",
+    "category": "Finance",
+    "content": "Dear *{name}*,\n  \n  This is a friendly reminder that payment for invoice #{invoice_number} is due on {due_date}.\n  \n  Amount Due: {amount}\n  \n  Pay easily through our secure payment link:\n  {payment_link}\n  \n  Questions about your invoice? We're here to help!\n  \n  Best regards,\n  {company_name} Team",
+    "imageUrl": "/public/templates/payment-reminder.jpg"
+  },
+  {
+    "id": "course-update",
+    "name": "Course Update",
+    "category": "Education",
+    "content": "Hello *{name}*! 📚\n  \n  New content is available in your course: *{course_name}*\n  \n  What's new:\n  • {module_name}\n  • Estimated time: {duration}\n  • New resources available\n  \n  Access your course here:\n  {course_link}\n  \n  Happy learning!\n  {instructor_name}",
+    "imageUrl": "/public/templates/course-update.jpg"
+  },
+  {
+    "id": "delivery-status",
+    "name": "Delivery Status",
+    "category": "Logistics",
+    "content": "Hi *{name}*,\n  \n  Your package is on its way! 📦\n  \n  Tracking Number: {tracking_number}\n  Status: {status}\n  Expected Delivery: {delivery_date}\n  \n  Track your package:\n  {tracking_link}\n  \n  Questions about your delivery?\n  Reply to this message for assistance.",
+    "imageUrl": "/public/templates/delivery-status.jpg"
+  },
+  {
+    "id": "reservation-confirmation",
+    "name": "Reservation Confirmation",
+    "category": "Hospitality",
+    "content": "Thank you for choosing us, *{name}*!\n  \n  Your reservation is confirmed:\n  🏨 {business_name}\n  📅 Date: {date}\n  ⏰ Time: {time}\n  👥 Party size: {party_size}\n  \n  Special requests: {special_requests}\n  \n  Need to modify? Call us at {phone_number}\n  \n  We look forward to serving you!",
+    "imageUrl": "/public/templates/reservation-confirmation.jpg"
+  }
+]

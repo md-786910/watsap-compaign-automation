@@ -33,8 +33,7 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
       status: false,
     });
   }
-  console.log({ template });
-  return res.status(200).json({});
+
   const RECIPIENTS = await processedSheet.find({});
   if (RECIPIENTS?.length === 0) {
     return res.status(200).json({
@@ -47,17 +46,17 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
   let bannerMedia = null;
   let audioMedia = null;
   let documentMedia = null;
-  if (template?.imageUrl) {
+  if (template?.imageName) {
     bannerMedia = MessageMedia.fromFilePath(
       path.join(__dirname, "../uploads/", template.imageName)
     );
   }
-  if (template?.audioUrl) {
+  if (template?.audioName) {
     audioMedia = MessageMedia.fromFilePath(
       path.join(__dirname, "../uploads/", "audio.mp3")
     );
   }
-  if (template?.documentUrl) {
+  if (template?.documentName) {
     documentMedia = MessageMedia.fromFilePath(
       path.join(__dirname, "../uploads/", "doc.pdf")
     );

@@ -7,8 +7,7 @@ const bcrypt = require("bcryptjs");
  */
 exports.hashPassword = async (password) => {
   try {
-    const salt = await bcrypt.genSalt(10); // Generate a salt with 10 rounds
-    return await bcrypt.hash(password, salt);
+    return await bcrypt.hash(password, 10);
   } catch (error) {
     console.error("Error hashing password:", error.message);
     throw new Error("Password hashing failed");

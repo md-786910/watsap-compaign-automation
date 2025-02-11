@@ -11,7 +11,7 @@ export const Home = () => {
         <>
             {
                 showModal &&
-                <Model text="Create Account" width="md" setIsRegistering={setIsRegistering} setShowModal={setShowModal} showModal={showModal} isRegistering={isRegistering} Component={() => <Auth isRegistering={isRegistering} setIsRegistering={setIsRegistering} />} />
+                <Model text="Create Account" width="md" setIsRegistering={setIsRegistering} setShowModal={setShowModal} showModal={showModal} isRegistering={isRegistering} Component={() => <Auth isRegistering={isRegistering} setIsRegistering={setIsRegistering} setShowModal={setShowModal} />} />
             }
             <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
                 <div className="max-w-full px-4 h-16 flex items-center justify-between">

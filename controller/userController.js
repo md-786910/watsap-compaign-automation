@@ -7,7 +7,7 @@ const { hashPassword, comparePassword } = require("../utils/hashing");
 const { generateToken } = require("../utils/jwt");
 
 exports.register = CatchAsync(async (req, res, next) => {
-  if (!req.body) return next(AppError("request body is required", 200));
+  if (!req.body) return next(new AppError("request body is required", 404));
   const {
     name,
     email,
@@ -16,15 +16,15 @@ exports.register = CatchAsync(async (req, res, next) => {
     authentication_type = AUTHENTICATION_TYPE.EMAIL,
   } = req.body;
   if (!name || !email || !password) {
-    return next(AppError("name, email and password are required", 200));
+    return next(new AppError("name, email and password are required", 404));
   }
   if (!role) {
-    return next(AppError("role is required", 200));
+    return next(new AppError("role is required", 404));
   }
 
   const checkUser = await User.findOne({ email: email });
   if (checkUser) {
-    return next(AppError("user already exist", 200));
+    return next(new AppError("user already exist", 404));
   }
   // @register
   const hashedPassword =
@@ -47,20 +47,20 @@ exports.register = CatchAsync(async (req, res, next) => {
 });
 
 exports.login = CatchAsync(async (req, res, next) => {
-  if (!req.body) return next(AppError("request body is required", 200));
+  if (!req.body) return next(new AppError("request body is required", 404));
   const { email, password } = req.body;
   if (!email || !password) {
-    return next(AppError("email and password are required", 200));
+    return next(new AppError("email and password are required", 404));
   }
 
-  const user = await User.findOne({ email: email });
+  const user = await User.findOne({ email });
   if (!user) {
-    return next(AppError("user not found", 200));
+    return next(new AppError("user not found", 404));
   }
 
   const isPasswordCorrect = await comparePassword(password, user.password);
-  if (isPasswordCorrect) {
-    return next(AppError("password is incorrect", 200));
+  if (!isPasswordCorrect) {
+    return next(new AppError("password is incorrect", 404));
   }
 
   // signed jwt token

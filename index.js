@@ -40,15 +40,15 @@ const router = express.Router();
 app.use("/api/v1", router);
 router.use(watsappRouter);
 router.use(generalRouter);
-router.use("/user", userRoute);
+router.use("/auth", userRoute);
 router.use("/file", fileRouter);
 
 // ✅ Global Error Handler
 const errorHandler = (err, req, res, next) => {
-  res.status(err.status || 500).json({
-    success: false,
+  res.status(err.statusCode || 500).json({
     message: err.message || "Internal Server Error",
-    status: err.status || 500,
+    success: false,
+    status: err.status || "error",
     stack: err.stack,
   });
 };

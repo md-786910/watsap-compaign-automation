@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { WHATSAPP_TEMPLATES } from '../../utils/templateData';
+import WHATSAPP_TEMPLATES from '../../command/template.json';
 import { Filter } from 'lucide-react';
 
 const categories = ['all', ...new Set(WHATSAPP_TEMPLATES.map(t => t.category))];
@@ -13,9 +13,9 @@ function CustomTemplate(props) {
             ...prev,
             name: `Copy of ${template.name}`,
             content: template.content,
-            imageUrl: template.imageUrl,
-            documentUrl: '',
-            audioUrl: ''
+            imageFile: template.imageUrl,
+            documentFile: '',
+            audioFile: ''
         }));
         setImagePreviewUrl(template.imageUrl);
         const timeout = setTimeout(() => {

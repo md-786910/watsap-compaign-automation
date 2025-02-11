@@ -1,43 +1,11 @@
-// import { defineConfig } from 'vite';
-// import react from '@vitejs/plugin-react';
-// import tailwindcss from 'tailwindcss';
-
-// // https://vitejs.dev/config/
-// export default defineConfig({
-//   root: './',
-//   plugins: [react()],
-//   publicDir: "public",
-//   optimizeDeps: {
-//     include: [
-//       'react',
-//       'react-dom',
-//       '@headlessui/react',
-//       '@heroicons/react',
-//       'clsx',
-//       'lodash-es'
-//     ],
-//     exclude: ['lucide-react'],
-//   },
-//   css: {
-//     postcss: {
-//       plugins: [tailwindcss()],
-//     },
-//   },
-//   server: {
-//     port: 3000,
-//     open: true,
-//   },
-// });
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from 'tailwindcss';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "tailwindcss";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  root: './',
-  plugins: [
-    react(),
-  ],
+  root: "./",
+  plugins: [react()],
   publicDir: "public",
   css: {
     postcss: {
@@ -46,27 +14,27 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
-      'react',
-      'react-dom',
-      '@headlessui/react',
-      '@heroicons/react',
-      'clsx',
-      'lodash-es'
+      "react",
+      "react-dom",
+      "@headlessui/react",
+      "@heroicons/react",
+      "clsx",
+      "lodash-es",
     ],
-    exclude: ['lucide-react'],
+    exclude: ["lucide-react"],
   },
   build: {
-    target: 'esnext',
+    target: "esnext",
     cssCodeSplit: true,
-    minify: 'esbuild',
+    minify: "esbuild",
     sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('lucide-react')) return 'lucide-react';
-            if (id.includes('@heroicons/react')) return 'heroicons';
-            return 'vendor';
+          if (id.includes("node_modules")) {
+            if (id.includes("lucide-react")) return "lucide-react";
+            if (id.includes("@heroicons/react")) return "heroicons";
+            return "vendor";
           }
         },
       },
@@ -74,7 +42,7 @@ export default defineConfig({
   },
   server: {
     host: true,
-    port: 3000,
+    // port: 3000,
     strictPort: true,
     open: false,
   },

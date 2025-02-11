@@ -24,9 +24,9 @@ export const Template = () => {
     const [currentTemplate, setCurrentTemplate] = useState({
         name: '',
         content: '',
-        imageFile: '',
-        documentFile: '',
-        audioFile: '',
+        imageFile: null,
+        documentFile: null,
+        audioFile: null,
         isDefault: false
     });
 
@@ -105,6 +105,19 @@ export const Template = () => {
         setError(null);
     };
 
+    async function getFileFromPublic(path) {
+        console.log({ path })
+        const response = await fetch(path);
+        const blob = await response.blob();
+
+        // Create a File object
+        const file = new File([blob], path.split('/')[2], {
+            type: blob.type,
+            lastModified: new Date().getTime(), // Setting last modified time
+        });
+        return file;
+    }
+
     const handleSave = async () => {
         if (!currentTemplate.name || !currentTemplate.content) {
             setError('Please fill in all required fields');
@@ -113,6 +126,11 @@ export const Template = () => {
         }
         setLoading(true);
         try {
+            // @changes to file if string
+            if (currentTemplate.imageFile?.split('/')?.[1] == "templates" || currentTemplate.imageFile?.split('/')?.[4] == "uploads") {
+                const file = await getFileFromPublic(currentTemplate.imageFile);
+                currentTemplate.imageFile = file;
+            }
             const formData = new FormData();
             formData.append('name', currentTemplate.name);
             formData.append('content', currentTemplate.content);
@@ -129,14 +147,14 @@ export const Template = () => {
             if (resp.status === 200) {
                 showToast('Template saved successfully!', "success");
             }
-
             setError(null);
         } catch (err) {
             setError('Failed to save template. Please try again.');
+            showToast(err, "error");
         } finally {
             setError(null);
             setLoading(false);
-            showToast(err, "error");
+
         }
     };
 
@@ -165,9 +183,9 @@ export const Template = () => {
             ...currentTemplate,
             name: data?.name,
             content: data?.content,
-            imageFile: data?.imageName ? `${SERVER_FILE_API}/${data?.imageName}` : currentTemplate.imageFile,
-            documentFile: data?.documentName ? `${SERVER_FILE_API}/doc.pdf` :currentTemplate.documentFile,
-            audioFile: data?.audioName ? `${SERVER_FILE_API}/audio.mp3` : currentTemplate.audioFile,
+            imageFile: data?.imageUrl && `${SERVER_FILE_API}/${data?.imageName}`,
+            documentFile: data?.documentUrl && `${SERVER_FILE_API}/${data?.documentName}`,
+            audioFile: data?.audioUrl && `${SERVER_FILE_API}/${data?.audioName}`,
             isDefault: data?.isDefault,
         })
     }, [data])
@@ -376,7 +394,7 @@ export const Template = () => {
                                 </div>
                             </div>
 
-                           <WatsapPreview currentTemplate ={currentTemplate} imagePreviewUrl={imagePreviewUrl} />
+                            <WatsapPreview currentTemplate={currentTemplate} imagePreviewUrl={imagePreviewUrl} />
                         </div>
                     </div>
                 </div>

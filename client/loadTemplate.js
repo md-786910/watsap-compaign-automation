@@ -1,18 +1,18 @@
-import fs from 'fs';
-import path from 'path';
-import axios from 'axios';
-import { fileURLToPath } from 'url';
-import { WHATSAPP_TEMPLATES } from './src/utils/templateData.js';
+import fs from "fs";
+import path from "path";
+import axios from "axios";
+import { fileURLToPath } from "url";
+import { WHATSAPP_TEMPLATES } from "./src/command/templateData";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // JSON file that stores templates
-const JSON_FILE_PATH = path.join(__dirname, '/public/template.json');
+const JSON_FILE_PATH = path.join(__dirname, "./src/utils/template.json");
 
 // Folder to store downloaded images
-const folderPath = path.join(__dirname, 'public/templates');
+const folderPath = path.join(__dirname, "/public/templates");
 
 // Ensure folder exists
 if (!fs.existsSync(folderPath)) {
@@ -28,7 +28,7 @@ const downloadImage = async (url, filePath) => {
 
     const response = await axios({
       url,
-      responseType: 'arraybuffer',
+      responseType: "arraybuffer",
     });
 
     fs.writeFileSync(filePath, response.data);
@@ -44,7 +44,7 @@ const loadExistingTemplates = () => {
   }
 
   try {
-    const fileData = fs.readFileSync(JSON_FILE_PATH, 'utf-8');
+    const fileData = fs.readFileSync(JSON_FILE_PATH, "utf-8");
     return JSON.parse(fileData);
   } catch (error) {
     console.error(`Error reading JSON file:`, error);
@@ -62,18 +62,25 @@ const updateTemplates = async () => {
   let updatedTemplates = [...existingTemplates];
 
   for (const newTemplate of WHATSAPP_TEMPLATES) {
-    const extension = path.extname(new URL(newTemplate.imageUrl).pathname) || '.jpg';
+    const extension =
+      path.extname(new URL(newTemplate.imageUrl).pathname) || ".jpg";
     const fileName = `${newTemplate.id}${extension}`;
     const filePath = path.join(folderPath, fileName);
 
     await downloadImage(newTemplate.imageUrl, filePath);
 
-    const localImageUrl = `/public/templates/${fileName}`;
-    const existingIndex = existingTemplates.findIndex(t => t.id === newTemplate.id);
+    const localImageUrl = `/templates/${fileName}`;
+    const existingIndex = existingTemplates.findIndex(
+      (t) => t.id === newTemplate.id
+    );
 
     if (existingIndex !== -1) {
       // Update existing template
-      updatedTemplates[existingIndex] = { ...existingTemplates[existingIndex], ...newTemplate, imageUrl: localImageUrl };
+      updatedTemplates[existingIndex] = {
+        ...existingTemplates[existingIndex],
+        ...newTemplate,
+        imageUrl: localImageUrl,
+      };
       console.log(`Updated template: ${newTemplate.id}`);
     } else {
       // Add new template

@@ -36,12 +36,16 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
+    console.log(error);
     // Handle response errors (e.g., redirect to login on 401)
     if (error.response?.status === 401) {
       // Handle unauthorized access (e.g., redirect to login)
       console.error("Unauthorized access. Redirecting to login...");
       // window.location.href = "/login"; // Redirect to login page
     }
+    // if (error.response?.status === 200) {
+    //   showToast(error.response?.data?.message || error.message, "success");
+    // }
     showToast(error.response?.data?.message || error.message, "error");
     return Promise.reject(error);
   }

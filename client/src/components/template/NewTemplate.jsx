@@ -10,6 +10,7 @@ import Model from '../model/Model';
 import CustomTemplate from './CustomTemplate';
 import WatsapPreview from '../common/WatsapPreview';
 import { SERVER_FILE_API } from '../../utils/common';
+import { generateStreamedPrompt } from '../../helpers/promptEnhance';
 
 
 
@@ -27,18 +28,19 @@ export const Template = () => {
         imageFile: null,
         documentFile: null,
         audioFile: null,
-        isDefault: false
+        isDefault: true
     });
+    const [reload, setReload] = useState(0);
 
 
     const [imagePreviewUrl, setImagePreviewUrl] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const { setShowModal, showModal } = useWhatsApp()
+    const { setShowModal, showModal = false } = useWhatsApp()
     const { data, loading: dataLoading, error: fetchError } = useFetch("/template", {
         method: "GET"
-    }, [loading])
+    }, [reload])
 
 
     const validateFile = (file, type) => {
@@ -106,16 +108,27 @@ export const Template = () => {
     };
 
     async function getFileFromPublic(path) {
-        console.log({ path })
-        const response = await fetch(path);
-        const blob = await response.blob();
+        try {
 
-        // Create a File object
-        const file = new File([blob], path.split('/')[2], {
-            type: blob.type,
-            lastModified: new Date().getTime(), // Setting last modified time
-        });
-        return file;
+            const response = await fetch(path);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+
+            // Extract filename from path safely
+            const fileName = new URL(path).pathname.split('/').pop() || 'downloaded-file';
+
+            // Create a File object
+            return new File([blob], fileName, {
+                type: blob.type,
+                lastModified: Date.now(),
+            });
+        } catch (error) {
+            console.error("Error fetching file:", error);
+            return null;
+        }
     }
 
     const handleSave = async () => {
@@ -127,10 +140,15 @@ export const Template = () => {
         setLoading(true);
         try {
             // @changes to file if string
-            if (currentTemplate.imageFile?.split('/')?.[1] == "templates" || currentTemplate.imageFile?.split('/')?.[4] == "uploads") {
-                const file = await getFileFromPublic(currentTemplate.imageFile);
-                currentTemplate.imageFile = file;
+            if (typeof currentTemplate?.imageFile === 'string') {
+                if (currentTemplate.imageFile.includes("templates") || currentTemplate.imageFile.includes("uploads")) {
+                    const file = await getFileFromPublic(currentTemplate.imageFile);
+                    if (file) {
+                        currentTemplate.imageFile = file;
+                    }
+                }
             }
+
             const formData = new FormData();
             formData.append('name', currentTemplate.name);
             formData.append('content', currentTemplate.content);
@@ -154,7 +172,7 @@ export const Template = () => {
         } finally {
             setError(null);
             setLoading(false);
-
+            setReload(Math.random());
         }
     };
 
@@ -173,6 +191,23 @@ export const Template = () => {
         });
     };
 
+    // @enhance prompt
+    const handleEnhancePrompt = async () => {
+        const { content } = currentTemplate;
+        if (!content) {
+            return;
+        }
+        const prompt = `Enhance the following prompt: ${content}`;
+        await generateStreamedPrompt(
+            prompt,
+            (partialText) => setCurrentTemplate({ ...currentTemplate, content: partialText }),  // Stream chunks
+            (error) => {
+                console.error("Streaming error:", error)
+                showToast(error, "error");
+            }
+        );
+    }
+
     if (fetchError) {
         showToast(fetchError, "error");
         return
@@ -186,7 +221,7 @@ export const Template = () => {
             imageFile: data?.imageUrl && `${SERVER_FILE_API}/${data?.imageName}`,
             documentFile: data?.documentUrl && `${SERVER_FILE_API}/${data?.documentName}`,
             audioFile: data?.audioUrl && `${SERVER_FILE_API}/${data?.audioName}`,
-            isDefault: data?.isDefault,
+            isDefault: true,
         })
     }, [data])
 
@@ -356,6 +391,9 @@ export const Template = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Enter your message content here..."
                                 />
+                                <button onClick={() => handleEnhancePrompt()}>
+                                    Enhance prompt
+                                </button>
                             </div>
 
                             <div className="flex space-x-3" style={{

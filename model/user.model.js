@@ -29,10 +29,5 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// @Method
-userSchema.methods.createUser = async function (user) {
-  return await this.save();
-};
-
 const User = mongoose.model("User", userSchema);
 module.exports = User;

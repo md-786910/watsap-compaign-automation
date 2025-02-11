@@ -3,7 +3,7 @@ function Model(props) {
     const { setShowModal, text = "Create Account", showSubmitBtn = false, onClick = null, Component, width = "md", style = {} } = props;
     return (
         <div className="fixed   inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className={`bg-white rounded-lg shadow-xl w-full max-w-${width} p-6`}
+            <div className={`bg-white rounded-lg shadow-xl ${width == 'md' ? ' w-2/6' : ''} max-w-${width} p-6`}
                 style={style}
             >
                 <div className="flex justify-between items-center mb-4">

@@ -4,7 +4,7 @@ import showToast from '../helpers/Toast';
 import { auth, googleProvider, signInWithPopup } from '../config/firebaseConfig';
 import Loader from './Loader';
 
-function Auth({ isRegistering, setIsRegistering }) {
+function Auth({ isRegistering, setIsRegistering, setShowModal }) {
     const [googleLoading, setGoogleLoading] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [user, setUser] = useState({
@@ -19,6 +19,13 @@ function Auth({ isRegistering, setIsRegistering }) {
         setUser({ ...user, [name]: value })
     }
 
+
+    // Handle authnentication
+    const authentication = async (type, authRoute, user) => {
+        return await axiosInstance.post(`/auth/${authRoute}`, { ...user, authentication_type: type })
+
+    }
+
     const handleSubmit = async (e, type) => {
         e.preventDefault();
         setIsLoading(true);
@@ -28,17 +35,15 @@ function Auth({ isRegistering, setIsRegistering }) {
                 showToast("Please fill all the fields", "warning");
                 return;
             }
-            let resp = null
-            if (type == "login") {
-                //@login user
-                resp = await axiosInstance.post("/auth/login", { email, password });
-            } else {
-                //@register user
-                resp = await axiosInstance.post("/auth/register", { ...user });
-            }
+            const resp = await authentication("email", type, type === 'login' ? { email, password, } : { ...user, role: "user" });
             if (resp?.status == 200) {
                 const messageType = type == "login" ? "login" : "created";
                 showToast(`user ${messageType} successfully`, "success");
+                if (type === 'login') {
+                    setShowModal(false);
+                } else {
+                    setIsRegistering(false);
+                }
             }
         } catch (error) {
             showToast(error, "error");
@@ -57,6 +62,11 @@ function Auth({ isRegistering, setIsRegistering }) {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
             console.log("Signed in user:", user);
+            const resp = await authentication("google", "login", {
+                email: user.email,
+                photoUrl: user.photoURL,
+                name: user.displayName,
+            });
             // You can redirect the user or update the state here
         } catch (error) {
             console.error("Error signing in with Google:", error);

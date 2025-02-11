@@ -61,15 +61,15 @@ export const Dashboard = () => {
   //@ Websocket
   useEffect(() => {
     // Connect to the socket
-    socket.connect();
+    // socket.connect();
     socket.on("message", (data) => {
       console.log("Connected to server", data);
       setIncoming(data);
     });
     // Cleanup on component unmount
     return () => {
-      socket.disconnect(); // Disconnect the socket
-      socket.off("message"); // Stop listening to the "message" event
+      // socket.disconnect(); // Disconnect the socket
+      // socket.off("message"); // Stop listening to the "message" event
     };
   }, []);
 

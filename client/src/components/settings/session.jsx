@@ -40,11 +40,11 @@ function GetSession() {
     }
 
     useEffect(() => {
-        socket.connect();
+        // socket.connect();
         return () => {
             // socket.off("watsapp_connected");
             // socket.off("watsapp_disconnected");
-            socket.disconnect();
+            // socket.disconnect();
         };
 
     }, [socket]);

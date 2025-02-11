@@ -77,12 +77,15 @@ export const WhatsAppProvider = ({ children }) => {
     }
 
     // @for auth model
-
+    useEffect(() => {
+        socket.connect();
+        return () => socket.disconnect()
+    }, [socket])
 
     return (
         <WhatsAppContext.Provider
             value={{
-                setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp, handleStartMessaging,handleStartMessagingBackground,
+                setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp, handleStartMessaging, handleStartMessagingBackground,
                 setShowModal, showModal, setIsRegistering, isRegistering
             }}
         >

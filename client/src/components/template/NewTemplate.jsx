@@ -10,6 +10,7 @@ import Model from '../model/Model';
 import CustomTemplate from './CustomTemplate';
 import WatsapPreview from '../common/WatsapPreview';
 import { SERVER_FILE_API } from '../../utils/common';
+import { generateStreamedPrompt } from '../../helpers/promptEnhance';
 
 
 
@@ -172,6 +173,23 @@ export const Template = () => {
             return updated;
         });
     };
+
+    // @enhance prompt
+    const handleEnhancePrompt = async () => {
+        const { content } = currentTemplate;
+        if (!content) {
+            return;
+        }
+        const prompt = `Enhance the following prompt: ${content}`;
+        await generateStreamedPrompt(
+            prompt,
+            (partialText) => setCurrentTemplate({ ...currentTemplate, content: partialText }),  // Stream chunks
+            (error) => {
+                console.error("Streaming error:", error)
+                showToast(error, "error");
+            }
+        );
+    }
 
     if (fetchError) {
         showToast(fetchError, "error");
@@ -356,6 +374,9 @@ export const Template = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Enter your message content here..."
                                 />
+                                <button onClick={() => handleEnhancePrompt()}>
+                                    Enhance prompt
+                                </button>
                             </div>
 
                             <div className="flex space-x-3" style={{

@@ -60,14 +60,32 @@ export const WhatsAppProvider = ({ children }) => {
             setIsLoading(false);
         }
     }
+    // @running in background
+    const handleStartMessagingBackground = async () => {
+        setIsLoading(true);
+        try {
+            const resp = await axiosInstance.get("/start-messaging-background");
+            if (resp.status === 200) {
+                showToast(resp.data.message, "success");
+            }
+        } catch (error) {
+            showToast(error, "error");
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }
 
     // @for auth model
-
+    useEffect(() => {
+        socket.connect();
+        return () => socket.disconnect()
+    }, [socket])
 
     return (
         <WhatsAppContext.Provider
             value={{
-                setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp, handleStartMessaging,
+                setConnectMessage, setIsLoading, setIsConnected, connectMessage, isConnected, isLoading, connectToWhatsApp, disconnectFromWhatsApp, handleStartMessaging, handleStartMessagingBackground,
                 setShowModal, showModal, setIsRegistering, isRegistering
             }}
         >

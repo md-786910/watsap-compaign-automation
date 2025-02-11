@@ -300,7 +300,9 @@ exports.createTemplate = CatchAsync(async (req, res, next) => {
   }
 
   // Extract file URLs from request files
-  const { imageUrl, documentUrl, audioUrl } = req.files;
+  let { imageUrl, documentUrl, audioUrl } = req.files;
+  // imageUrl = imageUrl?.startsWith("http") ? imageUrl : fs.wr;
+
   const fileObj = {
     imageUrl: imageUrl?.[0]?.path ?? null,
     documentUrl: documentUrl?.[0]?.path ?? null,
@@ -322,6 +324,7 @@ exports.createTemplate = CatchAsync(async (req, res, next) => {
     );
   } else {
     // Create new template
+    await Template.updateMany({ isDefault: false });
     template = await Template.create({ name, content, ...fileObj });
   }
 

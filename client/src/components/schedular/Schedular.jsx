@@ -1,109 +1,93 @@
-// import React from 'react'
+import React, { useEffect, useState } from "react";
+import WatsapPreview from "../common/WatsapPreview";
+import Sheets from "../common/Sheets";
+import Button from "../../utils/button";
+import { useWhatsApp } from "../../context/WatsappContext";
+import showToast from "../../helpers/Toast";
+import { useFetch } from "../../hooks/useFetch";
+import Loader from "../Loader";
+import { SERVER_FILE_API } from "../../utils/common";
 
-// function Schedular() {
-//     return (
-//         <div className="space-y-6">
-//             <div className="bg-white rounded-lg shadow-md  mb-7">
-//                 <div className="flex items-center justify-between border-b-2">
-//                     <div className="px-6 py-4 border-b border-gray-200">
-//                         <h2 className="text-xl font-semibold text-gray-800">
-//                             Schedule your message
-//                         </h2>
-//                     </div>
-//                 </div>
-//             </div>
 
-//         </div>
-//     )
-// }
-
-// export default Schedular
-
-import React, { useState } from 'react'
 
 function Schedular() {
-    const [schedule, setSchedule] = useState({
-        message: '',
-        dateTime: '',
-        frequency: 'once',
-        phoneNumbers: '',
-    })
-
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        // Add your WhatsApp API integration logic here
-        console.log('Schedule details:', schedule)
+  const[data,setData] = useState({
+    isTemplate:false,
+    isSheet:true
+  })
+  const [currentTemplate,setCurrentTemplate] = useState({})
+  const { handleStartMessaging, isLoading } = useWhatsApp();
+  const {data:template,error,loading} = useFetch(
+    "/template",
+    {
+      method: "GET",
+    },
+    []
+  );
+  if(error){
+    return showToast(error,"error")
+  }
+  useEffect(()=>{
+    if(template){
+        setCurrentTemplate({
+            name: template?.name,
+            content:template?.content,
+            imageFile:template.imageName ?`${SERVER_FILE_API}/${template.imageName}`:"",
+            audioFile: template.audioName?`${SERVER_FILE_API}/${template.audioName}`:"",
+            documentFile:template.documentName? `${SERVER_FILE_API}/${template.documentName}`:"", 
+            imageName: template.imageName ?? "",
+            audioName: template?.audioName ?? "",
+            documentName: template?.documentName ?? "",
+        })
+        setData({
+            ...data,
+            isTemplate:true
+        })
     }
+  },[loading])
 
-    return (
-        <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md mb-7">
-                <div className="flex items-center justify-between border-b-2">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            Schedule Campaign Messages
-                        </h2>
-                    </div>
-                </div>
-                <div className="p-6">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Campaign Message</label>
-                            <textarea
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                rows="4"
-                                value={schedule.message}
-                                onChange={(e) => setSchedule({ ...schedule, message: e.target.value })}
-                                placeholder="Enter your campaign message"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Schedule Date & Time</label>
-                            <input
-                                type="datetime-local"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                value={schedule.dateTime}
-                                onChange={(e) => setSchedule({ ...schedule, dateTime: e.target.value })}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Frequency</label>
-                            <select
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                value={schedule.frequency}
-                                onChange={(e) => setSchedule({ ...schedule, frequency: e.target.value })}
-                            >
-                                <option value="once">Once</option>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Phone Numbers</label>
-                            <textarea
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                rows="3"
-                                value={schedule.phoneNumbers}
-                                onChange={(e) => setSchedule({ ...schedule, phoneNumbers: e.target.value })}
-                                placeholder="Enter phone numbers (one per line)"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            Schedule Campaign
-                        </button>
-                    </form>
-                </div>
-            </div>
+  return (
+    <div className="space-y-6">
+         {
+            loading && <Loader/>
+        }
+      <div className="bg-white rounded-lg shadow-md mb-7">
+        <div className="flex items-center justify-between border-b-2">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Schedule Campaign Messages
+            </h2>
+        
+          </div>
+          <Button
+            text="start to send message(foreground)"
+            loadingText="sending..."
+            onClick={() => {
+                if(!data.isTemplate){
+                    return showToast("Please select as default template : Template.","warning")
+                }
+                if(!data.isSheet){
+                    return showToast("Please upload sheet to send message.","warning")
+                }
+                handleStartMessaging()
+            }}
+            isLoading={isLoading}
+            className="bg-blue-600 text-white font-semibold rounded-md"
+            style={{
+                padding:"9px"
+            }}
+          />
         </div>
-    )
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <WatsapPreview
+            currentTemplate={currentTemplate}
+            imagePreviewUrl={""}
+          />
+          <Sheets />
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default Schedular
+export default Schedular;

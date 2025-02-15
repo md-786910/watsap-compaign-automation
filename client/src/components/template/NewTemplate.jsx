@@ -10,7 +10,7 @@ import Model from '../model/Model';
 import CustomTemplate from './CustomTemplate';
 import WatsapPreview from '../common/WatsapPreview';
 import { SERVER_FILE_API } from '../../utils/common';
-import { generateStreamedPrompt } from '../../helpers/promptEnhance';
+import { enhancePromptCompletion } from '../../AI/together_ai';
 
 
 
@@ -36,7 +36,7 @@ export const Template = () => {
     const [imagePreviewUrl, setImagePreviewUrl] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
-
+    const [enhancePrompt, setEnhancePrompt] = useState("");
     const { setShowModal, showModal = false } = useWhatsApp()
     const { data, loading: dataLoading, error: fetchError } = useFetch("/template", {
         method: "GET"
@@ -197,15 +197,13 @@ export const Template = () => {
         if (!content) {
             return;
         }
-        const prompt = `Enhance the following prompt: ${content}`;
-        await generateStreamedPrompt(
-            prompt,
-            (partialText) => setCurrentTemplate({ ...currentTemplate, content: partialText }),  // Stream chunks
+        await enhancePromptCompletion(content,
+            setEnhancePrompt,
             (error) => {
-                console.error("Streaming error:", error)
                 showToast(error, "error");
             }
         );
+
     }
 
     if (fetchError) {
@@ -224,6 +222,10 @@ export const Template = () => {
             isDefault: true,
         })
     }, [data])
+
+    useEffect(() => {
+        setCurrentTemplate({ ...currentTemplate, content: enhancePrompt })
+    }, [enhancePrompt])
 
     return (
         <div className="space-y-6">
@@ -391,9 +393,11 @@ export const Template = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Enter your message content here..."
                                 />
-                                <button onClick={() => handleEnhancePrompt()}>
-                                    Enhance prompt
-                                </button>
+                                <div className="enhance_prompt">
+                                    <button onClick={() => handleEnhancePrompt()}>
+                                        Enhance prompt
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex space-x-3" style={{

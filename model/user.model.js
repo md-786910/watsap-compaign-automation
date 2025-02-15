@@ -20,11 +20,28 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
-    activeSubscription: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Subscription",
-      default: null,
+    active_subscription: {
+      type: Boolean,
+      default: true,
     },
+    total_credit: {
+      type: Number,
+      default: 300,
+    },
+    used_credit: {
+      type: Number,
+      default: 0,
+    },
+    remaining_credit: {
+      type: Number,
+      default: 300,
+    },
+
+    // activeSubscription: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Subscription",
+    //   default: null,
+    // },
   },
   { timestamps: true }
 );

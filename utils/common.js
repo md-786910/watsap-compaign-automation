@@ -43,9 +43,16 @@ const RECIPIENTS = [
   },
 ];
 
+const generatePassword64 = (byte = 64) => {
+  const randomBytes = new Uint8Array(byte / 8); // 8 bits = 1 bytes
+  crypto.getRandomValues(randomBytes); // Fill with random values
+  return btoa(String.fromCharCode(...randomBytes));
+};
+
 module.exports = {
   formatPhoneNumber,
   delay,
   insertLogsToDb,
   RECIPIENTS,
+  generatePassword64,
 };

@@ -1,8 +1,15 @@
 const { CODESTATUS } = require("../config/status");
 const { formatPhoneNumber, insertLogsToDb, delay } = require("../utils/common");
 const MessageLog = require("../model/message.model");
-const { emitIOMessage, getIO, emitIOMessageStats } = require("../config/socketManager");
+const {
+  emitIOMessage,
+  getIO,
+  emitIOMessageStats,
+  emitIOCreditLimitStats,
+} = require("../config/socketManager");
 const { getClient } = require("../config/watsappConfig");
+const { countCreditLeft } = require("../utils/credit");
+const User = require("../model/user.model");
 // Configuration
 const BATCH_CONFIG = {
   BATCH_SIZE: 20,
@@ -27,26 +34,25 @@ async function sendMessageWithRetry({
   try {
     // Send template with banner
     const messageText = messageContent;
-    if(bannerMedia) {
+    if (bannerMedia) {
       await client.sendMessage(chatId, bannerMedia, {
         caption: messageText,
         linkPreview: true,
       });
-    }else{
+    } else {
       await client.sendMessage(chatId, messageText);
     }
-   
+
     // Wait briefly before sending audio
     await delay(1000);
 
     // Send audio file
-    if(audioMedia) {
+    if (audioMedia) {
       await client.sendMessage(chatId, audioMedia);
     }
-    if(documentMedia) {
+    if (documentMedia) {
       await client.sendMessage(chatId, documentMedia);
     }
-
 
     return true;
   } catch (error) {
@@ -74,16 +80,15 @@ async function sendMessageWithRetry({
 }
 
 // Process messages in batches
-async function processBatch(
- {
+async function processBatch({
   batch,
   bannerMedia,
   audioMedia,
   documentMedia,
-  messageLogs,
-  messageContent
- }
-) {
+  messageLogs = [],
+  messageContent,
+  userId,
+}) {
   const client = getClient();
   if (!client) {
     throw new Error("WhatsApp client not connected");
@@ -114,12 +119,7 @@ async function processBatch(
         continue;
       }
 
-      if (!phoneNumber.startsWith("+91") || phoneNumber=="+91N/A") {
-        messageLogs.push({
-          phoneNumber,
-          status: CODESTATUS.FAILED,
-          reason: "Non-Indian phone number",
-        });
+      if (!phoneNumber.startsWith("+91") || phoneNumber == "+91N/A") {
         await insertLogsToDb({
           phoneNumber,
           status: CODESTATUS.FAILED,
@@ -136,11 +136,6 @@ async function processBatch(
       // Verify WhatsApp registration
       const numberExists = await client.isRegisteredUser(chatId);
       if (!numberExists) {
-        messageLogs.push({
-          phoneNumber,
-          status: "Skipped",
-          reason: "Number not registered on WhatsApp",
-        });
         await insertLogsToDb({
           phoneNumber,
           status: CODESTATUS.SKIPPED,
@@ -160,7 +155,7 @@ async function processBatch(
         audioMedia,
         documentMedia,
         client,
-        messageContent
+        messageContent,
       });
       if (result) {
         messageCount++;
@@ -170,22 +165,40 @@ async function processBatch(
           reason: "Message sent successfully",
           count: 1,
         });
-        emitIOMessageStats(`${messageCount} message sent : ${recipient.phoneNumber}`);
+        emitIOMessageStats(
+          `${messageCount} message sent : ${recipient.phoneNumber}`
+        );
+
+        // check credit left or not
+        const isCreditLeft = await countCreditLeft(userId);
+        if (!isCreditLeft) {
+          emitIOMessageStats(`credit limit exceeded`);
+          return;
+        }
+        // update credit count
+        const credit = await User.updateOne(
+          { _id: userId },
+          {
+            $inc: {
+              used_credit: 1, // Increment used_credit by 1
+              remaining_credit: -1, // Decrement remaining_credit by 1
+            },
+          },
+          { new: true }
+        );
+
+        // update reamining count
+        emitIOCreditLimitStats(credit?.remaining_credit);
       }
-      messageLogs.push({ phoneNumber, status: "success" });
       await delay(BATCH_CONFIG.MESSAGE_DELAY);
     } catch (error) {
-      messageLogs.push({
-        phoneNumber,
-        status: "Error",
-        error: error.message,
-      });
       await insertLogsToDb({
         phoneNumber: phoneNumber,
         status: CODESTATUS.FAILED,
         reason: error.message,
       });
       emitIOMessage(`error ${error.message} for ${recipient.phoneNumber}`);
+      throw error;
     }
   }
 }

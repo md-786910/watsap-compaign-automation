@@ -7,20 +7,31 @@ const { emitIOMessage } = require("../config/socketManager");
 const { getClient } = require("../config/watsappConfig");
 const processedSheet = require("../model/processed_sheet.model");
 const Template = require("../model/template.model");
+const { countCreditLeft } = require("../utils/credit");
 
 exports.LoadCampaingAndStarted = async (req, res, next) => {
   const client = getClient();
   // Check if client is ready
-  // if (!client) {
-  //   emitIOMessage(
-  //     "WhatsApp client not connected. Please scan QR code or wait for connection"
-  //   );
-  //   return res.status(503).json({
-  //     message:
-  //       "Please connect to WhatsApp client for sending message. Not connected",
-  //     status: false,
-  //   });
-  // }
+  if (!client) {
+    emitIOMessage(
+      "WhatsApp client not connected. Please scan QR code or wait for connection"
+    );
+    return res.status(503).json({
+      message:
+        "Please connect to WhatsApp client for sending message. Not connected",
+      status: false,
+    });
+  }
+
+  // Check credit left or not
+  const isCreditLeft = await countCreditLeft(req.user?._id);
+  if (!isCreditLeft) {
+    emitIOMessage("You have no credit left");
+    return res.status(404).json({
+      message: "You have no credit left. Please buy credit",
+      status: false,
+    });
+  }
 
   /*
   1.check : Template is available(content,(Optional[Audio,documents,images]))
@@ -91,6 +102,7 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
         documentMedia,
         messageLogs,
         messageContent,
+        userId: req.user?._id,
       });
       processedCount += batch.length;
       emitIOMessage(
@@ -117,7 +129,7 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
       JSON.stringify({
         status: "Completed",
         processed: processedCount,
-        messageLogs,
+        total: RECIPIENTS.length,
       }) + "\n"
     );
 

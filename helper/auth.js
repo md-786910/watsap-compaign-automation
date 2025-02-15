@@ -1,24 +1,40 @@
-import { verifyToken } from "../utils/jwt";
+const UserSession = require("../model/user_session.model");
+const AppError = require("../utils/AppError");
+const { verifyToken } = require("../utils/jwt");
 
 /**
  * Middleware to authenticate users via JWT.
  */
-export const authenticateUser = async (req, res, next) => {
+const WHITELISTED_ROUTES = ["/auth/login", "/auth/register"];
+
+exports.authenticateUser = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.split(" ")[1]; // Extract Bearer token
-    if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: No token provided" });
+    const { authorization } = req.headers;
+    if (WHITELISTED_ROUTES.includes(req.path)) {
+      return next(); // Skip authentication for these routes
     }
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return res.status(403).json({ message: "Invalid or expired token" });
+    if (!authorization) {
+      return next(new AppError("Unauthorized", 401));
     }
-    req.user = decoded; // Attach user data to request
+    const token = authorization.replace(/Bearer\s*"?([^"]+)"?/, "$1");
+
+    const isTokenExist = await verifyToken(token);
+    if (!isTokenExist) {
+      return next(new AppError("Unauthorized", 401));
+    }
+    const user = await UserSession.findOne({ token });
+    if (!user) {
+      return next(new AppError("Unauthorized user", 401));
+    }
+    req.user = user;
     next();
   } catch (error) {
-    console.error("Error authenticating user:", error);
-    res.status(500).json({ message: "Error authenticating user" });
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Unauthorized: Token expired" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+    next(new AppError(error.message, 500));
   }
 };

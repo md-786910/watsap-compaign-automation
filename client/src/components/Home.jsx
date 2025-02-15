@@ -1,12 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MessageCircle, Zap, Shield, Users, ChevronRight, CheckCircle2, LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useWhatsApp } from '../context/WatsappContext';
 import Model from './model/Model';
 import Auth from './Auth';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 export const Home = () => {
+    const navigate = useNavigate();
+    const [user, _] = useLocalStorage("user")
     const { setShowModal, showModal, setIsRegistering, isRegistering } = useWhatsApp();
+    useEffect(() => {
+        if (user) {
+            navigate("/dashboard");
+        }
+    }, [])
     return (
         <>
             {
@@ -144,7 +152,7 @@ export const Home = () => {
                     <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
                         Join thousands of businesses already using our platform to reach their customers on WhatsApp.
                     </p>
-                    <button className="px-8 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50">
+                    <button className="px-8 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50" onClick={() => setShowModal(true)}>
                         Start Free Trial
                     </button>
                 </div>

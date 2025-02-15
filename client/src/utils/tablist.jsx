@@ -1,4 +1,5 @@
 import Batch from "../components/settings/Batch";
+import Profile from "../components/settings/Profile";
 import GetSession from "../components/settings/session";
 import Subscription from "../components/settings/Subscription";
 
@@ -20,7 +21,7 @@ const tabList = [
   },
   {
     name: "Profile",
-    component: () => <div>Profile</div>,
+    component: () => <Profile />,
     id: tabKey.PROFILE,
   },
 ];

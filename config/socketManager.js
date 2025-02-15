@@ -50,5 +50,16 @@ const emitIOMessageStats = (msg) => {
     io.emit("listen_message", msg);
   }
 };
+const emitIOCreditLimitStats = (msg) => {
+  if (io) {
+    io.emit("update_credit", msg);
+  }
+};
 // @initialize it when start from client side
-module.exports = { initSocket, getIO, emitIOMessage,emitIOMessageStats };
+module.exports = {
+  initSocket,
+  getIO,
+  emitIOMessage,
+  emitIOMessageStats,
+  emitIOCreditLimitStats,
+};

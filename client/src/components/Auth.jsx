@@ -3,10 +3,15 @@ import axiosInstance from '../config/axios';
 import showToast from '../helpers/Toast';
 import { auth, googleProvider, signInWithPopup } from '../config/firebaseConfig';
 import Loader from './Loader';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { useNavigate } from 'react-router-dom';
 
 function Auth({ isRegistering, setIsRegistering, setShowModal }) {
+    const navigate = useNavigate();
     const [googleLoading, setGoogleLoading] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [_, setLocalUser] = useLocalStorage("user", null);
+    const [_1, setTokenUser] = useLocalStorage("access_token", null);
     const [user, setUser] = useState({
         email: "",
         password: '',
@@ -26,6 +31,23 @@ function Auth({ isRegistering, setIsRegistering, setShowModal }) {
 
     }
 
+    // @handle redirect to dashboard
+    const handleRedirect = async (resp) => {
+        if (resp?.status == 200) {
+            const { data: { user, token } } = resp.data;
+            setLocalUser(JSON.stringify(user));
+            setTokenUser(JSON.stringify(token));
+            showToast("user login successfully", "success");
+            setTimeout(() => {
+                setShowModal(false);
+            }, 300);
+            // redirect to dashboard
+            navigate("/dashboard", { replace: true });
+        } else {
+            showToast("something went wrong", "error");
+        }
+    }
+
     const handleSubmit = async (e, type) => {
         e.preventDefault();
         setIsLoading(true);
@@ -36,15 +58,9 @@ function Auth({ isRegistering, setIsRegistering, setShowModal }) {
                 return;
             }
             const resp = await authentication("email", type, type === 'login' ? { email, password, } : { ...user, role: "user" });
-            if (resp?.status == 200) {
-                const messageType = type == "login" ? "login" : "created";
-                showToast(`user ${messageType} successfully`, "success");
-                if (type === 'login') {
-                    setShowModal(false);
-                } else {
-                    setIsRegistering(false);
-                }
-            }
+            const messageType = type == "login" ? "login" : "created";
+            showToast(`user ${messageType} successfully`, "success");
+            handleRedirect(resp);
         } catch (error) {
             showToast(error, "error");
         }
@@ -61,15 +77,14 @@ function Auth({ isRegistering, setIsRegistering, setShowModal }) {
         try {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
-            console.log("Signed in user:", user);
             const resp = await authentication("google", "login", {
                 email: user.email,
-                photoUrl: user.photoURL,
                 name: user.displayName,
+                role: "user"
             });
-            // You can redirect the user or update the state here
+            await handleRedirect(resp);
         } catch (error) {
-            console.error("Error signing in with Google:", error);
+            showToast(error?.message, "error");
         } finally {
             setGoogleLoading(false);
         }
@@ -122,9 +137,9 @@ function Auth({ isRegistering, setIsRegistering, setShowModal }) {
             <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="flex items-center justify-center w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-                {isRegistering ? 'Create Account' : 'Sign In'} {isLoading && <Loader />}
+                {isRegistering ? 'Create Account' : 'Sign In'} &nbsp;{isLoading && <Loader color="white" width="20" />}
             </button>
 
             <div className="relative">

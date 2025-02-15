@@ -10,7 +10,8 @@ const userRoute = express.Router();
 // @post[register]
 userRoute.post("/register", register);
 userRoute.post("/login", login);
-userRoute.get("/logout", logout);
+userRoute.post("/logout", logout);
+
 userRoute.get("/profile", profile);
 
 module.exports = userRoute;

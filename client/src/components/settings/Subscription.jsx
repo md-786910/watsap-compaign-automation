@@ -1,58 +1,69 @@
 import { CheckCircle2 } from 'lucide-react';
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useFetch } from '../../hooks/useFetch';
+import showToast from '../../helpers/Toast';
+const SUBSCRIPTION_PLANS = [
+    {
+        name: 'Free',
+        price: '$0',
+        credits: 300,
+        features: [
+            'Up to 300 messages/month',
+            'Basic templates',
+            'Single device',
+            'Email support'
+        ]
+    },
+    {
+        name: 'Pro',
+        price: '$9',
+        credits: 1000,
+        features: [
+            'Up to 1000 messages/month',
+            'Advanced templates',
+            'Multiple devices',
+            'Priority support',
+            'Analytics dashboard',
+            'Custom branding'
+        ]
+    },
 
+];
 function Subscription() {
-    const SUBSCRIPTION_PLANS = [
-        {
-            name: 'Free',
-            price: '$0',
-            credits: 1000,
-            features: [
-                'Up to 1,000 messages/month',
-                'Basic templates',
-                'Single device',
-                'Email support'
-            ]
-        },
-        {
-            name: 'Pro',
-            price: '$49',
-            credits: 10000,
-            features: [
-                'Up to 10,000 messages/month',
-                'Advanced templates',
-                'Multiple devices',
-                'Priority support',
-                'Analytics dashboard',
-                'Custom branding'
-            ]
-        },
-        {
-            name: 'Enterprise',
-            price: '$199',
-            credits: 50000,
-            features: [
-                'Up to 50,000 messages/month',
-                'Custom templates',
-                'Unlimited devices',
-                '24/7 support',
-                'Advanced analytics',
-                'API access',
-                'Custom integration'
-            ]
-        }
-    ];
-
     const [subscription, setSubscription] = useState({
         plan: 'free',
         status: 'active',
         nextBilling: '2024-04-01',
         credits: {
-            total: 1000,
-            used: 250,
-            remaining: 750
+            total: 300,
+            used: 150,
+            remaining: 150
         }
     });
+
+    const { data, error, loading } = useFetch("/auth/profile", {
+        method: "GET",
+    }, [])
+
+    if (error) {
+        return showToast(error, "error")
+    }
+
+    useEffect(() => {
+        if (data) {
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + 30);
+            setSubscription({
+                ...subscription,
+                nextBilling: futureDate,
+                credits: {
+                    total: data.total_credit,
+                    used: data.used_credit,
+                    remaining: data.remaining_credit
+                }
+            })
+        }
+    }, [data])
 
 
     return (
@@ -141,10 +152,10 @@ function Subscription() {
                                     disabled={plan.name.toLowerCase() === subscription.plan}
                                     className={`mt-6 w-full py-2 px-4 rounded-md ${plan.name.toLowerCase() === subscription.plan
                                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                        : 'bg-blue-600 text-white hover:bg-blue-700  cursor-not-allowed'
                                         }`}
                                 >
-                                    {plan.name.toLowerCase() === subscription.plan ? 'Current Plan' : 'Upgrade'}
+                                    {plan.name.toLowerCase() === subscription.plan ? 'Current Plan' : 'Upcoming'}
                                 </button>
                             </div>
                         ))}

@@ -3,7 +3,7 @@ import showToast from "./Toast";
 // services/openaiService.js
 export const generateStreamedPrompt = async (prompt, onData, onError) => {
   if (!import.meta.env.VITE_OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not defined.");
+    return showToast("OpenAI API key is not defined.", "error");
   }
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -13,7 +13,7 @@ export const generateStreamedPrompt = async (prompt, onData, onError) => {
         Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
         stream: true, // Enable streaming
       }),
@@ -53,7 +53,7 @@ export const generateStreamedPrompt = async (prompt, onData, onError) => {
     }
   } catch (error) {
     console.error("Error streaming data:", error);
-    showToast("Error streaming data " + error, "error");
+    showToast("Error streaming data " + error.message, "error");
     onError(error);
   }
 };

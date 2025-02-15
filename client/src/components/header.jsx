@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Menu,
   MessageCircle,
-  LogIn,
   LogOut,
-  Save,
   Podcast,
   User,
   ChevronDown,
@@ -12,15 +10,17 @@ import {
   CreditCard,
 } from "lucide-react";
 import socket from "../config/socketConfig";
-import axiosInstance from "../config/axios";
-import showToast from "../helpers/Toast";
 import Button from "../utils/button";
 import { useWhatsApp } from "../context/WatsappContext";
-import { Link } from "react-router-dom";
+import { Link, redirect } from "react-router-dom";
 import { tabKey } from "../utils/tablist";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { useFetch } from "../hooks/useFetch";
+import showToast from "../helpers/Toast";
+import axiosInstance from "../config/axios";
 export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messageStats, setMessageStats] = useState("");
+  const userLogin = useLocalStorage("user")
   const {
     setIsConnected,
     setIsLoading,
@@ -33,6 +33,32 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   } = useWhatsApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [credit, setCredit] = useState()
+  const { data, error } = useFetch("/auth/profile", {
+    method: "GET",
+  }, [])
+
+  if (error) {
+    return showToast(error, "error")
+  }
+
+
+  const logout = async () => {
+    try {
+      const resp = await axiosInstance.post("/auth/logout");
+      if (resp.status === 200) {
+        showToast(resp.data.message, "success")
+        window.localStorage.clear("access_token");
+        window.localStorage.clear("user");
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 400);
+      }
+    } catch (error) {
+      showToast(error, "error")
+    }
+  }
 
   useEffect(() => {
     socket.connect();
@@ -59,10 +85,9 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     });
 
     //@refresh seesion
-    // socket.on("refresh_session", (data) => {
-    //   console.log(data);
-    //   localStorage.clear();
-    // });
+    socket.on("update_credit", (data) => {
+      setCredit(data?.remaining_credit);
+    });
 
     return () => {
       // socket.off("watsapp_connected");
@@ -71,6 +96,11 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (data) {
+      setCredit(data?.remaining_credit)
+    }
+  }, [data])
   return (
     <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
       <div className="max-w-full px-4 h-16 flex items-center justify-between">
@@ -103,7 +133,7 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
         </div>
         <div className="flex gap-4">
           <div className="bg-blue-50 px-3 py-1 rounded-md flex items-center">
-            <span className="text-sm text-blue-600 font-medium">Credits: 2,500</span>
+            <span className="text-sm text-blue-600 font-medium">Credits: {credit}</span>
           </div>
           {!isConnected && (
             <Button
@@ -159,7 +189,12 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </Link >
                 <hr className="my-1" />
                 <button
-                  onClick={() => window.location.href = "/"}
+                  onClick={async () => {
+                    if (userLogin) {
+                      // can do logout
+                      await logout();
+                    }
+                  }}
                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center"
                 >
                   <LogOut className="w-4 h-4 mr-2" />

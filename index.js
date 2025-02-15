@@ -15,6 +15,7 @@ const fileRouter = require("./routes/file.route");
 const { disconnectClient } = require("./config/watsappConfig");
 const WatsappSession = require("./model/watsap_session.model");
 const userRoute = require("./routes/user.route");
+const { authenticateUser } = require("./helper/auth");
 
 // ✅ Middleware for JSON and Form Data Parsing
 app.use(express.json());
@@ -38,13 +39,18 @@ const router = express.Router();
 
 // ✅ Mount API routes
 app.use("/api/v1", router);
-router.use(watsappRouter);
-router.use(generalRouter);
+
+// authorize router
+router.use(authenticateUser);
+
+router.use("/", watsappRouter);
+router.use("/", generalRouter);
 router.use("/auth", userRoute);
 router.use("/file", fileRouter);
 
 // ✅ Global Error Handler
 const errorHandler = (err, req, res, next) => {
+  console.log(err);
   res.status(err.statusCode || 500).json({
     message: err.message || "Internal Server Error",
     success: false,
@@ -80,15 +86,49 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 // Listen for nodemon restart event
-process.once("SIGUSR2", () => {
+process.once("SIGUSR2", async () => {
   // @clear client
-  WatsappSession.updateMany({ status: "inactive" }).then((data) => {
-    console.log(data);
-  });
+  await WatsappSession.updateMany({ status: "inactive" });
   disconnectClient();
   //update session
+  process.kill(process.pid, "SIGUSR2");
+
   server.close(() => {
     console.log("Server closed");
     process.kill(process.pid, "SIGUSR2");
+  });
+});
+
+process.once("SIGTERM", async () => {
+  try {
+    console.log("Shutting down...");
+
+    // Update database before shutdown
+    const data = await WatsappSession.updateMany({ status: "inactive" });
+    console.log("Sessions updated:", data);
+
+    disconnectClient(); // Ensure cleanup completes
+
+    server.close(() => {
+      console.log("Server closed");
+      process.exit(0); // Properly exit the process
+    });
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+    process.exit(1);
+  }
+});
+
+// Handle other termination signals
+["SIGINT", "SIGTERM"].forEach((signal) => {
+  process.once(signal, async () => {
+    console.log(`Received ${signal} - Starting graceful shutdown`);
+    try {
+      disconnectClient();
+      process.exit(0);
+    } catch (error) {
+      console.error(`Error during ${signal} shutdown:`, error);
+      process.exit(1);
+    }
   });
 });

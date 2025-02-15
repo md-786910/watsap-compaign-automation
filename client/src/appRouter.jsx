@@ -6,6 +6,8 @@ import { Settings } from "./components/settings/Setting";
 import { Template } from "./components/template/NewTemplate";
 import { Home } from "./components/Home";
 import Schedular from "./components/schedular/Schedular";
+import ProtectedRoute from "./components/protectedRoutes";
+
 
 function DashboardLayout() {
   return (
@@ -26,35 +28,27 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    element: <DashboardLayout />,
+    element: <ProtectedRoute />, // Protect the whole dashboard
     errorElement: <h1>Child route not found</h1>,
     children: [
       {
-        index: true,
-        element: <Dashboard />,
+        element: <DashboardLayout />,
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: "template", element: <Template /> },
+          { path: "sheet", element: <ReadSheet /> },
+          { path: "settings", element: <Settings /> },
+          { path: "schedular", element: <Schedular /> },
+        ],
       },
-      {
-        path: "template",
-        element: <Template />,
-      },
-      {
-        path: "sheet",
-        element: <ReadSheet />,
-      },
-      {
-        path: "settings",
-        element: <Settings />,
-      },
-      {
-        path: "schedular",
-        element: <Schedular />,
-      },
-    ],
+    ]
+
   },
 ]);
 
 
 // Export the router for use in your app
 export default function AppRouter() {
+
   return <RouterProvider router={router} />;
 }

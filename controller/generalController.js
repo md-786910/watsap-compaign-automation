@@ -15,6 +15,8 @@ const ProcessSheetManager = require("../utils/processSheetData");
 const { cleanupFile, fileNameSave } = require("../helper/multer");
 const Template = require("../model/template.model");
 const fs = require("fs").promises;
+const qrcode = require('qrcode-terminal');
+
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
   const existingClient = getClient();
   try {
@@ -52,6 +54,8 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     // Handle QR code event
     client.on("qr", (qr) => {
       console.log("QR Code received. Waiting for scan...");
+      qrcode.generate(qr, { small: true }); // Display QR code in terminal
+      io.emit("qr", qr);
       io.emit(SOCKET.WATSAPP_CONNECTED, {
         message: "please scan the QR code",
         status: "waiting_for_qr",

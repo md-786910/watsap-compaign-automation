@@ -9,7 +9,7 @@ const initializeClientWebjs = (clientId = "default") => {
   }
   client = new Client({
     puppeteer: {
-      headless: false,
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     },
     authStrategy: new LocalAuth({ clientId }),

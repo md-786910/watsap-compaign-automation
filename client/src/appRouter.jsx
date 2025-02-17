@@ -7,6 +7,7 @@ import { Template } from "./components/template/NewTemplate";
 import { Home } from "./components/Home";
 import Schedular from "./components/schedular/Schedular";
 import ProtectedRoute from "./components/protectedRoutes";
+import WatsappMain from "./components/WatsappMain";
 
 
 function DashboardLayout() {
@@ -24,6 +25,11 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Home />, // Directly render Home at "/"
+    errorElement: <h1>Not found</h1>,
+  },
+  {
+    path: "/qr",
+    element: <WatsappMain />, // Directly render Home at "/"
     errorElement: <h1>Not found</h1>,
   },
   {

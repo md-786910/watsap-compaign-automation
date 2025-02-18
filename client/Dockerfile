@@ -1,24 +1,25 @@
-# write docker for it
-# Use the official Node.js 16 image
-FROM node:20.12.1-alpine
+# Use a Node.js base image
+FROM node:20
 
-# Set the working directory to /app
+# Set the working directory
 WORKDIR /app
 
-# Copy the package*.json files to the working directory
-COPY package*.json ./
-
-# Install the dependencies
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the client code to the working directory
+# Copy the rest of the application files
 COPY . .
 
-# Build the Vite application
-RUN npm run build
-
-# Expose the port
+# Build the frontend
+# RUN npm run build
 EXPOSE 5173
 
-# Run the command to start the Vite development server
-CMD ["npm", "run", "serve"]
+# Use an Nginx base image to serve the frontend
+# FROM nginx:latest
+# COPY --from=0 /app/dist /usr/share/nginx/html
+
+# Expose the default Nginx port
+# EXPOSE 80
+CMD ["npm", "run", "dev", "--", "--host"]
+# CMD ["nginx", "-g", "daemon off;"]

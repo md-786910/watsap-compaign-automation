@@ -18,6 +18,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 import { useFetch } from "../hooks/useFetch";
 import showToast from "../helpers/Toast";
 import axiosInstance from "../config/axios";
+import WatsappMain from "./WatsappMain";
 export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [messageStats, setMessageStats] = useState("");
   const userLogin = useLocalStorage("user")
@@ -32,6 +33,8 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     disconnectFromWhatsApp,
   } = useWhatsApp();
 
+  const [loadQr, setLoadQr] = useState(false);
+  const [qr, setQr] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [credit, setCredit] = useState()
   const { data, error } = useFetch("/auth/profile", {
@@ -89,12 +92,16 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
       setCredit(data?.remaining_credit);
     });
 
+    socket.on("qr", (data) => {
+      setQr(qr);
+    });
+
     return () => {
       // socket.off("watsapp_connected");
       // socket.off("watsapp_disconnected");
-      socket.disconnect();
+      // socket.disconnect();
     };
-  }, [socket]);
+  }, []);
 
   useEffect(() => {
     if (data) {
@@ -103,6 +110,20 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   }, [data])
   return (
     <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
+
+      {
+        loadQr &&
+        <>
+          <iframe src={"http://localhost:5173/qr"} width="100%" style={{
+            height: "100vh",
+            border: "none",
+            overflow: "hidden",
+            display: loadQr ? "block" : "none"
+          }} />
+        </>
+      }
+
+
       <div className="max-w-full px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button

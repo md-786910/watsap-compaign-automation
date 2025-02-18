@@ -1,7 +1,56 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import QRCodeStyling from "qr-code-styling";
 import { QrCode, Lock, Settings, Info, ArrowUpRight, ChevronRight } from 'lucide-react';
 
-function WatsappMain() {
+function WatsappMain({ }) {
+  const [options, setOptions] = useState({
+    width: 200,
+    height: 200,
+    type: 'png',
+    data: "qrCode",
+    margin: 10,
+    qrOptions: {
+      typeNumber: 0,
+      mode: 'Byte',
+      errorCorrectionLevel: 'Q'
+    },
+    cornersSquareOptions: { type: "square", color: "#000000" },
+    imageOptions: {
+      hideBackgroundDots: true,
+      imageSize: 0.5,
+      margin: 20,
+      crossOrigin: 'anonymous',
+    },
+    dotsOptions: {
+      color: 'bleu',
+      type: 'rounded'
+    },
+    backgroundOptions: {
+      color: '#25D366',
+    },
+    cornersSquareOptions: {
+      color: '#222222',
+      type: 'extra-rounded'
+    },
+    cornersDotOptions: {
+      color: '#222222',
+      type: 'dot',
+    }
+  });
+  const ref = useRef(null);
+
+  const [qrCode] = useState(new QRCodeStyling(options));
+  useEffect(() => {
+    if (ref.current) {
+      qrCode.append(ref.current);
+    }
+  }, [qrCode, ref]);
+
+  useEffect(() => {
+    if (!qrCode) return;
+    qrCode.update(options);
+  }, [qrCode, options]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff1e9] to-white flex flex-col">
       {/* Header */}
@@ -93,7 +142,8 @@ function WatsappMain() {
                 <div className="absolute -inset-2 bg-gradient-to-r from-[#25D366]/20 to-[#25D366]/10 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative w-48 h-48 border-2 border-[#25D366] rounded-xl p-2 bg-white/80 backdrop-blur-sm shrink-0">
                   <div className="w-full h-full bg-[#f0f2f5] rounded-lg flex items-center justify-center">
-                    <QrCode className="w-32 h-32 text-[#25D366]" />
+                    {/* <QrCode className="w-32 h-32 text-[#25D366]" ref={ref} /> */}
+                    <div ref={ref} />
                   </div>
                 </div>
               </div>
@@ -114,3 +164,6 @@ function WatsappMain() {
 }
 
 export default WatsappMain;
+
+
+

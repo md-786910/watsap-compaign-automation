@@ -1,16 +1,27 @@
-version: '3'
-services:
-  client:
-    build:
-      context: ./client
-    ports:
-      - "5173:5173"
-    depends_on:
-      - server
-    environment:
-      - VITE_PROXY_URL=http://server:3000
+version: '3.8'
 
-  server:
+services:
+  backend:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+    entrypoint: ["xvfb-run", "--", "node", "index.js"]
+
+  frontend:
+    build: ./client
+    ports:
+      - "3000:5173"
+    env_file:
+      - .env
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - backend

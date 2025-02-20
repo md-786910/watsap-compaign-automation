@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const watsappBatchSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     batch_size: {
       type: Number,
       default: 20,

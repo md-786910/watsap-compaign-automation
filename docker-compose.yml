@@ -1,16 +1,20 @@
-version: '3'
-services:
-  client:
-    build:
-      context: ./client
-    ports:
-      - "5173:5173"
-    depends_on:
-      - server
-    environment:
-      - VITE_PROXY_URL=http://server:3000
+version: '3.8'
 
-  server:
+services:
+  backend:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    restart: always
+
+  frontend:
+    build: ./client
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    restart: always

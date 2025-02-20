@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const processedSheetSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     fileName: String,
     name: String,
     phone_number: String,

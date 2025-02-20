@@ -12,12 +12,13 @@ import {
 import socket from "../config/socketConfig";
 import Button from "../utils/button";
 import { useWhatsApp } from "../context/WatsappContext";
-import { Link, redirect } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { tabKey } from "../utils/tablist";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { useFetch } from "../hooks/useFetch";
 import showToast from "../helpers/Toast";
 import axiosInstance from "../config/axios";
+import WatsappMain from "./WatsappMain";
 export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [messageStats, setMessageStats] = useState("");
   const userLogin = useLocalStorage("user")
@@ -32,6 +33,8 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     disconnectFromWhatsApp,
   } = useWhatsApp();
 
+  const [qr, setQr] = useState("");
+  const [show, setShow] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [credit, setCredit] = useState()
   const { data, error } = useFetch("/auth/profile", {
@@ -68,6 +71,18 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
         setIsConnected(true);
         setConnectMessage(data.message);
         setIsLoading(false);
+
+        if (data?.qr) {
+          setQr(data.qr)
+          setTimeout(() => {
+            setShow(true)
+          }, 200)
+        }
+        if (data?.connecting == true) {
+          setConnectMessage("watsapp connecting... please wait for while do not close window!");
+        } else {
+          setShow(false)
+        }
       }
     });
 
@@ -84,9 +99,13 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
       setMessageStats(data);
     });
 
-    //@refresh seesion
+    //@refresh update_credit
     socket.on("update_credit", (data) => {
-      setCredit(data?.remaining_credit);
+      setCredit(data);
+    });
+
+    socket.on("qr", (data) => {
+      setQr(data);
     });
 
     return () => {
@@ -94,7 +113,7 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
       // socket.off("watsapp_disconnected");
       socket.disconnect();
     };
-  }, [socket]);
+  }, []);
 
   useEffect(() => {
     if (data) {
@@ -103,6 +122,7 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   }, [data])
   return (
     <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
+      {show && <WatsappMain handleCloseWatsapp={disconnectFromWhatsApp} qr={qr} setShow={setShow} message={connectMessage} />}
       <div className="max-w-full px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button

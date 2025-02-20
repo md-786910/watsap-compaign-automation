@@ -10,7 +10,7 @@ import axiosInstance from '../../config/axios'
 function GetSession() {
     const [hitSeesion, setHitSession] = useState(1)
     const [loader, setLoader] = useState(false)
-    const { connectToWhatsApp, isLoading } = useWhatsApp();
+    const { connectToWhatsApp, isLoading, setShow } = useWhatsApp();
     const { loading, error, data } = useFetch("/session", {
         method: "GET",
     }, [isLoading, hitSeesion])
@@ -107,7 +107,9 @@ function GetSession() {
                                 <div className="flex items-center space-x-3">
                                     {session.status === "inactive" && (
                                         <button
-                                            onClick={() => connectToWhatsApp(session.session_id)}
+                                            onClick={() => {
+                                                connectToWhatsApp(session.session_id)
+                                            }}
                                             className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                                             title="Activate Session"
                                         >

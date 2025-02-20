@@ -37,15 +37,24 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
   1.check : Template is available(content,(Optional[Audio,documents,images]))
   2. Check Sheet is available with min count is 1
   */
-  const template = await Template.findOne({ isDefault: true });
+  const template = await Template.findOne({
+    userId: req.user?._id,
+    isDefault: true,
+  });
   if (!template) {
     return res.status(200).json({
       message: "Please create template first",
       status: false,
     });
   }
+  if (template && !template?.isDefault) {
+    return res.status(200).json({
+      message: "Please set default template first",
+      status: false,
+    });
+  }
 
-  const RECIPIENTS = await processedSheet.find({});
+  const RECIPIENTS = await processedSheet.find({ userId: req.user?._id });
   if (RECIPIENTS?.length === 0) {
     return res.status(200).json({
       message: "Please upload sheet to sending message",
@@ -153,7 +162,8 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
 
 exports.getWatsappCompaign = async (req, res) => {
   try {
-    const logs = await MessageLog.find({}).sort({ createdAt: -1 });
+    const userId = req.user?._id;
+    const logs = await MessageLog.find({ userId }).sort({ createdAt: -1 });
     const stats = await MessageLog.aggregate([
       {
         $group: {

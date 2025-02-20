@@ -15,10 +15,12 @@ const ProcessSheetManager = require("../utils/processSheetData");
 const { cleanupFile, fileNameSave } = require("../helper/multer");
 const Template = require("../model/template.model");
 const fs = require("fs").promises;
-const qrcode = require('qrcode-terminal');
+const qrcode = require("qrcode-terminal");
 
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
   const existingClient = getClient();
+  const userId = req.user?._id;
+
   try {
     if (existingClient) {
       existingClient.destroy();
@@ -36,9 +38,10 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     const client = await initializeClientWebjs(session_id);
 
     // Check if session exists in the database, if not, create it
-    const session = await WatsappSession.findOne({ session_id });
+    const session = await WatsappSession.findOne({ userId, session_id });
     if (!session) {
       await WatsappSession.create({
+        userId,
         session_id,
         phone_number: client.info?.wid?.user,
         device: client.info?.platform,
@@ -48,6 +51,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     }
     // @UPDATE SESSION TO BE INACTIVE
     await WatsappSession.updateMany({
+      userId,
       status: "inactive",
     });
 
@@ -55,11 +59,11 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     client.on("qr", (qr) => {
       console.log("QR Code received. Waiting for scan...");
       qrcode.generate(qr, { small: true }); // Display QR code in terminal
-      io.emit("qr", qr);
       io.emit(SOCKET.WATSAPP_CONNECTED, {
         message: "please scan the QR code",
         status: "waiting_for_qr",
         qr: qr, // Optionally send the QR code data if needed
+        connecting: true,
       });
     });
 
@@ -69,6 +73,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
       io.emit(SOCKET.WATSAPP_CONNECTED, {
         message: "connected to whatsApp successfully",
         status: "connected",
+        connecting: false,
       });
       await WatsappSession.findOneAndUpdate(
         { session_id },
@@ -78,6 +83,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
             user: client.info?.pushname,
             phone_number: client.info?.wid?.user,
             device: client.info?.platform,
+            userId,
           },
         },
         { new: true, upsert: true } // Return the updated document
@@ -86,6 +92,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
       session.user = client.info?.pushname;
       session.phone_number = client.info?.wid?.user;
       session.device = client.info?.platform;
+      session.userId = userId;
       await session.save();
     });
 
@@ -96,6 +103,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         message: "whatsApp authentication failed",
         status: "auth_failed",
         error: msg,
+        connecting: true,
       });
     });
 
@@ -106,6 +114,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         message: "ahatsApp disconnected",
         status: "disconnected",
         reason: reason,
+        connecting: true,
       });
     });
 
@@ -114,7 +123,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
 
     // Send an initial response to the HTTP request
     res.status(200).json({
-      message: "WhatsApp client initialization started",
+      message: "WhatsApp client initialization started connecting...",
       status: "initializing",
     });
   } catch (error) {
@@ -139,7 +148,10 @@ exports.disconnectedFromWatsapp = CatchAsync(async (req, res, next) => {
 });
 
 exports.getAllSession = CatchAsync(async (req, res, next) => {
-  const sessions = await WatsappSession.find({}).sort({ createdAt: -1 });
+  const userId = req.user?._id;
+  const sessions = await WatsappSession.find({ userId }).sort({
+    createdAt: -1,
+  });
   res.status(200).json({
     message: "sessions fetched successfully",
     status: true,
@@ -149,10 +161,14 @@ exports.getAllSession = CatchAsync(async (req, res, next) => {
 
 exports.deleteSession = CatchAsync(async (req, res, next) => {
   const { session_id } = req.params;
+  const userId = req.user?._id;
   if (!session_id) {
     return next(new AppError("session is required", 200));
   }
-  const session = await WatsappSession.findOne({ session_id });
+  const session = await WatsappSession.findOne({
+    userId,
+    session_id,
+  });
   if (!session) {
     return next(new AppError("session not found", 200));
   }
@@ -168,7 +184,7 @@ exports.deleteSession = CatchAsync(async (req, res, next) => {
   // Ensure file exists before deleting
   await fs.access(folderPath);
   await fs.rm(folderPath, { recursive: true, force: true });
-  await WatsappSession.findOneAndDelete({ session_id });
+  await WatsappSession.findOneAndDelete({ userId, session_id });
   res.status(200).json({
     message: "session deleted successfully",
     status: true,
@@ -180,12 +196,12 @@ exports.createWatsappBatch = CatchAsync(async (req, res, next) => {
     return next(new AppError("Req body is required", 200));
   }
   const { batch_size, message_delay, batch_delay } = req.body;
-  console.log(req.body);
-  const batch = await WatsappBatch.findOne({});
-  console.log({ batch });
+  const userId = req.user?._id;
+  const batch = await WatsappBatch.findOne({ userId });
   if (!batch) {
     // create
     await WatsappBatch.create({
+      userId,
       batch_size,
       message_delay,
       batch_delay,
@@ -193,11 +209,12 @@ exports.createWatsappBatch = CatchAsync(async (req, res, next) => {
   } else {
     // @update
     await WatsappBatch.updateOne(
-      { _id: batch._id },
+      { _id: batch._id, userId },
       {
         batch_size,
         message_delay,
         batch_delay,
+        userId,
       }
     );
   }
@@ -208,7 +225,8 @@ exports.createWatsappBatch = CatchAsync(async (req, res, next) => {
 });
 
 exports.getWatsapBatch = CatchAsync(async (req, res, next) => {
-  const batch = await WatsappBatch.findOne({});
+  const userId = req.user?._id;
+  const batch = await WatsappBatch.findOne({ userId });
   res.status(200).json({
     message: "batch fetched successfully",
     status: true,
@@ -221,9 +239,9 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
   if (!req.file) {
     return next(new AppError("Sheet is required", 200));
   }
-
+  const userId = req.user?._id;
   // @clear sheet model
-  await processedSheet.deleteMany({});
+  await processedSheet.deleteMany({ userId });
   // end
 
   const { originalname, path, mimetype } = req.file;
@@ -250,7 +268,10 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
   // @insrting in db
   for (const data of extractedData) {
     if (
-      await processedSheet.findOne({ phone_number: `+91${data.phone_number}` })
+      await processedSheet.findOne({
+        userId,
+        phone_number: `+91${data.phone_number}`,
+      })
     ) {
       continue;
     }
@@ -262,6 +283,7 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
       : `+91${data.phone_number}`;
 
     await processedSheet.create({
+      userId,
       name: data.name,
       phone_number: phoneNumberProcess,
       fileName: originalname,
@@ -277,7 +299,8 @@ exports.processSheet = CatchAsync(async (req, res, next) => {
 });
 
 exports.getSheet = CatchAsync(async (req, res, next) => {
-  const sheet = await processedSheet.find({}).sort({ createdAt: -1 });
+  const userId = req.user?._id;
+  const sheet = await processedSheet.find({ userId }).sort({ createdAt: -1 });
   res.status(200).json({
     message: "sheet fetched successfully",
     status: true,
@@ -287,7 +310,8 @@ exports.getSheet = CatchAsync(async (req, res, next) => {
 
 exports.deleteSheet = CatchAsync(async (req, res, next) => {
   //@delete all
-  await processedSheet.deleteMany({});
+  const userId = req.user?._id;
+  await processedSheet.deleteMany({ userId });
   res.status(200).json({
     message: "sheet deleted successfully",
     status: true,
@@ -297,7 +321,7 @@ exports.deleteSheet = CatchAsync(async (req, res, next) => {
 // Create or Update Template
 exports.createTemplate = CatchAsync(async (req, res, next) => {
   const { name, content, isDefault } = req.body;
-
+  const userId = req.user?._id;
   // Validate required fields
   if (!name || !content) {
     return next(new AppError("Name and content are required", 400)); // Changed status code to 400 for bad request
@@ -317,19 +341,19 @@ exports.createTemplate = CatchAsync(async (req, res, next) => {
   };
 
   // Check if template already exists
-  let template = await Template.findOne({ name });
+  let template = await Template.findOne({ userId, name });
 
   if (template) {
     // Update existing template
     template = await Template.findOneAndUpdate(
-      { _id: template._id },
-      { $set: { name, content, isDefault, ...fileObj } },
+      { _id: template._id, userId },
+      { $set: { userId, name, content, isDefault, ...fileObj } },
       { new: true, upsert: true } // Return the updated document
     );
   } else {
     // Create new template
-    await Template.updateMany({ isDefault: false });
-    template = await Template.create({ name, content, ...fileObj });
+    await Template.updateMany({ userId, isDefault: false });
+    template = await Template.create({ userId, name, content, ...fileObj });
   }
 
   // Send response
@@ -342,7 +366,8 @@ exports.createTemplate = CatchAsync(async (req, res, next) => {
 
 // Get All Templates
 exports.getTemplates = CatchAsync(async (req, res, next) => {
-  const templates = await Template.findOne({}).sort({ createdAt: -1 });
+  const userId = req.user?._id;
+  const templates = await Template.findOne({ userId }).sort({ createdAt: -1 });
   res.status(200).json({
     message: "Templates fetched successfully",
     status: true,

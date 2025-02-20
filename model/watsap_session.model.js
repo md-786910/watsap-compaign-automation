@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const watsappSessionSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     user: String,
     session_id: String,
     phone_number: String,

@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import QRCodeStyling from "qr-code-styling";
-import { QrCode, Lock, Settings, Info, ArrowUpRight, ChevronRight } from 'lucide-react';
+import { QrCode, Lock, Settings, Info, ArrowUpRight, ChevronRight, ShieldCloseIcon } from 'lucide-react';
 
-function WatsappMain({ }) {
+function WatsappMain(props) {
+  const { qr, setShow, handleCloseWatsapp, message } = props;
   const [options, setOptions] = useState({
     width: 200,
     height: 200,
     type: 'png',
-    data: "qrCode",
+    data: qr,
     margin: 10,
     qrOptions: {
       typeNumber: 0,
@@ -55,11 +56,24 @@ function WatsappMain({ }) {
     <div className="min-h-screen bg-gradient-to-br from-[#fff1e9] to-white flex flex-col">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm py-4 px-6 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex items-center gap-2">
-          <div className="bg-[#25D366]/10 p-2 rounded-lg">
-            <QrCode className="w-6 h-6 text-[#25D366]" />
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2">
+            <div className="bg-[#25D366]/10 p-2 rounded-lg">
+              <QrCode className="w-6 h-6 text-[#25D366]" />
+            </div>
+            <span className="text-xl font-semibold text-[#25D366]">WhatsApp</span>
           </div>
-          <span className="text-xl font-semibold text-[#25D366]">WhatsApp</span>
+          <div>
+            {message}
+          </div>
+          <div>
+            <button>
+              <ShieldCloseIcon onClick={() => {
+                setShow(null)
+                handleCloseWatsapp()
+              }} />
+            </button>
+          </div>
         </div>
       </header>
 

@@ -1,25 +1,18 @@
-# Use a Node.js base image
-FROM node:20
+# Build the frontend using Node.js
+FROM node:latest AS builder
 
-# Set the working directory
 WORKDIR /app
-
-# Copy package files and install dependencies
 COPY package.json package-lock.json ./
 RUN npm install
-
-# Copy the rest of the application files
 COPY . .
+RUN npm run build
 
-# Build the frontend
-# RUN npm run build
-EXPOSE 5173
+# Serve frontend using Nginx
+FROM nginx:latest
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Use an Nginx base image to serve the frontend
-# FROM nginx:latest
-# COPY --from=0 /app/dist /usr/share/nginx/html
+# Copy custom Nginx config
+COPY ../nginx.conf /etc/nginx/nginx.conf
 
-# Expose the default Nginx port
-# EXPOSE 80
-CMD ["npm", "run", "dev", "--", "--host"]
-# CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

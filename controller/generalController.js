@@ -15,7 +15,7 @@ const ProcessSheetManager = require("../utils/processSheetData");
 const { cleanupFile, fileNameSave } = require("../helper/multer");
 const Template = require("../model/template.model");
 const fs = require("fs").promises;
-const qrcode = require('qrcode-terminal');
+const qrcode = require("qrcode-terminal");
 
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
   const existingClient = getClient();
@@ -55,11 +55,11 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     client.on("qr", (qr) => {
       console.log("QR Code received. Waiting for scan...");
       qrcode.generate(qr, { small: true }); // Display QR code in terminal
-      io.emit("qr", qr);
       io.emit(SOCKET.WATSAPP_CONNECTED, {
         message: "please scan the QR code",
         status: "waiting_for_qr",
         qr: qr, // Optionally send the QR code data if needed
+        connecting: true,
       });
     });
 
@@ -69,6 +69,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
       io.emit(SOCKET.WATSAPP_CONNECTED, {
         message: "connected to whatsApp successfully",
         status: "connected",
+        connecting: false,
       });
       await WatsappSession.findOneAndUpdate(
         { session_id },
@@ -96,6 +97,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         message: "whatsApp authentication failed",
         status: "auth_failed",
         error: msg,
+        connecting: true,
       });
     });
 
@@ -106,6 +108,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         message: "ahatsApp disconnected",
         status: "disconnected",
         reason: reason,
+        connecting: true,
       });
     });
 
@@ -114,7 +117,7 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
 
     // Send an initial response to the HTTP request
     res.status(200).json({
-      message: "WhatsApp client initialization started",
+      message: "WhatsApp client initialization started connecting...",
       status: "initializing",
     });
   } catch (error) {

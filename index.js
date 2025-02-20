@@ -37,6 +37,10 @@ console.log("Static folder path:", path.join(__dirname, "uploads"));
 
 const router = express.Router();
 
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
 // ✅ Mount API routes
 app.use("/api/v1", router);
 

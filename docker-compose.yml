@@ -7,21 +7,14 @@ services:
       - "3000:3000"
     env_file:
       - .env
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
-    entrypoint: ["xvfb-run", "--", "node", "index.js"]
+    restart: always
 
   frontend:
     build: ./client
     ports:
-      - "3000:5173"
+      - "80:80"
     env_file:
       - .env
-    volumes:
-      - ./client:/app
-      - /app/node_modules
     depends_on:
       - backend
+    restart: always

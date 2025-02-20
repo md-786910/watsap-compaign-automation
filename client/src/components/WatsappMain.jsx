@@ -15,7 +15,6 @@ function WatsappMain(props) {
       mode: 'Byte',
       errorCorrectionLevel: 'Q'
     },
-    cornersSquareOptions: { type: "square", color: "#000000" },
     imageOptions: {
       hideBackgroundDots: true,
       imageSize: 0.5,

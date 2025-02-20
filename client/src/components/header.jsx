@@ -79,7 +79,7 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
           }, 200)
         }
         if (data?.connecting == true) {
-          setConnectMessage("watsapp connecting... please wait for while do close window!");
+          setConnectMessage("watsapp connecting... please wait for while do not close window!");
         } else {
           setShow(false)
         }

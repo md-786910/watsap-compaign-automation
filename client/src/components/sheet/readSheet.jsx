@@ -102,7 +102,7 @@ export const ReadSheet = () => {
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold mb-4">Upload Sheet (Max size 5mb)</h2>
           <button onClick={() => {
-            window.open("https://docs.google.com/spreadsheets/d/131N2EzYA-R_OhR2_3Bnxqui5JwGxEX8P/edit?usp=sharing&ouid=105436255648647026912&rtpof=true&sd=true")
+            window.open("https://docs.google.com/spreadsheets/d/19YCDr4ul5rZRyqH6UqFM01ezr2X9Exxx14N3vQmXjME/edit?usp=sharing")
           }} className="bg-yellow-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300">
             Download sample sheet
           </button>

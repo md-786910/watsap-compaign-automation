@@ -3,7 +3,6 @@ const { formatPhoneNumber, insertLogsToDb, delay } = require("../utils/common");
 const MessageLog = require("../model/message.model");
 const {
   emitIOMessage,
-  getIO,
   emitIOMessageStats,
   emitIOCreditLimitStats,
 } = require("../config/socketManager");
@@ -29,6 +28,7 @@ async function sendMessageWithRetry({
   documentMedia,
   client,
   messageContent,
+  userId,
   retryCount = 0,
 }) {
   try {
@@ -63,6 +63,7 @@ async function sendMessageWithRetry({
         phoneNumber: chatId,
         status: CODESTATUS.RETRY,
         reason: `Retrying for contact ${chatId}`,
+        userId,
       });
       return sendMessageWithRetry({
         chatId,
@@ -72,6 +73,7 @@ async function sendMessageWithRetry({
         documentMedia,
         client,
         messageContent,
+        userId,
         retryCount: retryCount + 1,
       });
     }
@@ -99,6 +101,7 @@ async function processBatch({
     try {
       // add check if already exist in skip it
       const alreadyExist = await MessageLog.findOne({
+        userId,
         phoneNumber,
         status: CODESTATUS.SUCCESS,
       });
@@ -114,6 +117,7 @@ async function processBatch({
           phoneNumber,
           status: CODESTATUS.SKIPPED,
           reason: `Already sended message for contact ${phoneNumber}`,
+          userId,
         });
         emitIOMessage(`Skipping ${recipient.phoneNumber}`);
         continue;
@@ -124,6 +128,7 @@ async function processBatch({
           phoneNumber,
           status: CODESTATUS.FAILED,
           reason: "Non-Indian phone number",
+          userId,
         });
         emitIOMessage(`Skipping not indian number ${recipient.phoneNumber}`);
 
@@ -140,6 +145,7 @@ async function processBatch({
           phoneNumber,
           status: CODESTATUS.SKIPPED,
           reason: "Number not registered on WhatsApp",
+          userId,
         });
         emitIOMessage(
           `Skipping not registered on watsapp ${recipient.phoneNumber}`
@@ -156,6 +162,7 @@ async function processBatch({
         documentMedia,
         client,
         messageContent,
+        userId,
       });
       if (result) {
         messageCount++;
@@ -164,6 +171,7 @@ async function processBatch({
           status: CODESTATUS.SUCCESS,
           reason: "Message sent successfully",
           count: 1,
+          userId,
         });
         emitIOMessageStats(
           `${messageCount} message sent : ${recipient.phoneNumber}`
@@ -196,6 +204,7 @@ async function processBatch({
         phoneNumber: phoneNumber,
         status: CODESTATUS.FAILED,
         reason: error.message,
+        userId,
       });
       emitIOMessage(`error ${error.message} for ${recipient.phoneNumber}`);
       throw error;

@@ -16,6 +16,8 @@ const { disconnectClient } = require("./config/watsappConfig");
 const WatsappSession = require("./model/watsap_session.model");
 const userRoute = require("./routes/user.route");
 const { authenticateUser } = require("./helper/auth");
+const { messageQueue } = require("./worker/queue");
+const { QUEUE_NAME } = require("./config/appconfig");
 
 // ✅ Middleware for JSON and Form Data Parsing
 app.use(express.json());
@@ -40,6 +42,13 @@ const router = express.Router();
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+// for (let i = 0; i < 200; i++) {
+//   messageQueue.add(QUEUE_NAME, {
+//     id: i + 1,
+//     name: "ashif " + i,
+//   });
+// }
 
 // ✅ Mount API routes
 app.use("/api/v1", router);
@@ -77,6 +86,7 @@ server.listen(PORT, async () => {
   await initSocket(server);
   await dbConnect();
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  require("./worker/worker");
 });
 
 // ✅ Graceful Error Handling

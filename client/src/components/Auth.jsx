@@ -37,7 +37,6 @@ function Auth({ isRegistering, setIsRegistering, setShowModal }) {
             const { data: { user, token } } = resp.data;
             setLocalUser(JSON.stringify(user));
             setTokenUser(JSON.stringify(token));
-            showToast("user login successfully", "success");
             setTimeout(() => {
                 setShowModal(false);
             }, 300);
@@ -61,6 +60,7 @@ function Auth({ isRegistering, setIsRegistering, setShowModal }) {
             const messageType = type == "login" ? "login" : "created";
             showToast(`user ${messageType} successfully`, "success");
             handleRedirect(resp);
+            setIsRegistering(false)
         } catch (error) {
             showToast(error, "error");
         }

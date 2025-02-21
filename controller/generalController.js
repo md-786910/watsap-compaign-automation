@@ -16,6 +16,10 @@ const { cleanupFile, fileNameSave } = require("../helper/multer");
 const Template = require("../model/template.model");
 const fs = require("fs").promises;
 const qrcode = require("qrcode-terminal");
+const initRedis = require("../worker/initRedis");
+
+const redis = initRedis;
+
 
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
   const existingClient = getClient();

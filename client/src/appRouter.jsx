@@ -7,8 +7,8 @@ import { Template } from "./components/template/NewTemplate";
 import { Home } from "./components/Home";
 import Schedular from "./components/schedular/Schedular";
 import ProtectedRoute from "./components/protectedRoutes";
-import WatsappMain from "./components/WatsappMain";
-
+import { WhatsAppProvider } from "./context/WatsappContext";
+import { SocketProvider } from "./context/SockerProvider";
 
 function DashboardLayout() {
   return (
@@ -18,18 +18,10 @@ function DashboardLayout() {
   );
 }
 
-
-
-// Define your routes
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Home />, // Directly render Home at "/"
-    errorElement: <h1>Not found</h1>,
-  },
-  {
-    path: "/qr",
-    element: <WatsappMain />, // Directly render Home at "/"
     errorElement: <h1>Not found</h1>,
   },
   {
@@ -38,7 +30,15 @@ const router = createBrowserRouter([
     errorElement: <h1>Child route not found</h1>,
     children: [
       {
-        element: <DashboardLayout />,
+        element: (
+          <>
+            <WhatsAppProvider>
+              <SocketProvider token={token}>
+                <DashboardLayout />
+              </SocketProvider>
+            </WhatsAppProvider>
+          </>
+        ),
         children: [
           { index: true, element: <Dashboard /> },
           { path: "template", element: <Template /> },
@@ -47,14 +47,11 @@ const router = createBrowserRouter([
           { path: "schedular", element: <Schedular /> },
         ],
       },
-    ]
-
+    ],
   },
 ]);
 
-
 // Export the router for use in your app
 export default function AppRouter() {
-
   return <RouterProvider router={router} />;
 }

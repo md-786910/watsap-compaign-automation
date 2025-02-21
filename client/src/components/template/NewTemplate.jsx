@@ -109,17 +109,14 @@ export const Template = () => {
 
     async function getFileFromPublic(path) {
         try {
-
             const response = await fetch(path);
             if (!response.ok) {
                 throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
             }
 
             const blob = await response.blob();
-
             // Extract filename from path safely
-            const fileName = new URL(path).pathname.split('/').pop() || 'downloaded-file';
-
+            const fileName = new URL(response?.url).pathname.split('/').pop() ;
             // Create a File object
             return new File([blob], fileName, {
                 type: blob.type,
@@ -145,6 +142,24 @@ export const Template = () => {
                     const file = await getFileFromPublic(currentTemplate.imageFile);
                     if (file) {
                         currentTemplate.imageFile = file;
+                    }
+                }
+            }
+
+            if (typeof currentTemplate?.documentFile === 'string') {
+                if ( currentTemplate.documentFile.includes("uploads")) {
+                    const file = await getFileFromPublic(currentTemplate.documentFile);
+                    if (file) {
+                        currentTemplate.documentFile = file;
+                    }
+                }
+            }
+
+            if (typeof currentTemplate?.audioFile === 'string') {
+                if ( currentTemplate.audioFile.includes("uploads")) {
+                    const file = await getFileFromPublic(currentTemplate.audioFile);
+                    if (file) {
+                        currentTemplate.audioFile = file;
                     }
                 }
             }

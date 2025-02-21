@@ -1,3 +1,4 @@
+const { getClient, disconnectClient } = require("../config/watsappConfig");
 const { AUTHENTICATION_TYPE } = require("../constant/authentication");
 const User = require("../model/user.model");
 const UserSession = require("../model/user_session.model");
@@ -150,6 +151,11 @@ exports.login = CatchAsync(async (req, res, next) => {
     return next(new AppError("password is incorrect", 404));
   }
 
+  // disconnect watsapp client
+  const existingClient = getClient();
+  if (existingClient) {
+    existingClient.destroy();
+  }
   // Proceed to login
   return await proccedToLgoin(user, res, next);
 });

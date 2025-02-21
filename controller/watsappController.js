@@ -8,6 +8,7 @@ const { getClient } = require("../config/watsappConfig");
 const processedSheet = require("../model/processed_sheet.model");
 const Template = require("../model/template.model");
 const { countCreditLeft } = require("../utils/credit");
+const mongoose = require("mongoose");
 
 exports.LoadCampaingAndStarted = async (req, res, next) => {
   const client = getClient();
@@ -165,6 +166,11 @@ exports.getWatsappCompaign = async (req, res) => {
     const userId = req.user?._id;
     const logs = await MessageLog.find({ userId }).sort({ createdAt: -1 });
     const stats = await MessageLog.aggregate([
+      {
+        $match: {
+          userId: userId, // Filter by userId
+        },
+      },
       {
         $group: {
           _id: "$status", // Group by the `status` field

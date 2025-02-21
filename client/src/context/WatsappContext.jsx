@@ -1,10 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axiosInstance from "../config/axios";
 import showToast from "../helpers/Toast";
-import socket from "../config/socketConfig";
 
 const WhatsAppContext = createContext();
-
 export const WhatsAppProvider = ({ children }) => {
     const [connectMessage, setConnectMessage] = useState("...");
     const [isConnected, setIsConnected] = useState(false);
@@ -75,13 +73,6 @@ export const WhatsAppProvider = ({ children }) => {
             setIsLoading(false);
         }
     }
-
-    // @for auth model
-    useEffect(() => {
-        socket.connect();
-        return () => socket.disconnect()
-    }, [socket])
-
     return (
         <WhatsAppContext.Provider
             value={{

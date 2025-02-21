@@ -33,6 +33,6 @@ cd "$ROOT_DIR" || exit
 # Step 5: Serve the frontend using `serve`
 echo "Starting frontend server..."
 "$NPM_BIN" install -g serve  # Ensure `serve` is installed
-serve -s "$FRONTEND_DIR/dist" -p 5173
+pm2 serve "$FRONTEND_DIR/dist" 5173 --name "frontend" --spa
 
 echo "Deployment complete!"

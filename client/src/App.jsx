@@ -10,6 +10,7 @@ import { Settings } from "./components/settings/Setting";
 import Schedular from "./components/schedular/Schedular";
 import { ReadTemplate } from "./components/template/readTemplate";
 import AppLayout from "./components/AppLayout";
+import { Template } from "./components/template/NewTemplate";
 
 function DashboardLayout() {
   return (
@@ -54,7 +55,7 @@ const App = () => {
           ),
           children: [
             { index: true, element: <Dashboard /> },
-            { path: "template", element: <ReadTemplate /> },
+            { path: "template", element: <Template /> },
             { path: "sheet", element: <ReadSheet /> },
             { path: "settings", element: <Settings /> },
             { path: "schedular", element: <Schedular /> },

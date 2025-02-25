@@ -103,7 +103,7 @@ process.on("unhandledRejection", (reason, promise) => {
 process.once("SIGUSR2", async () => {
   // @clear client
   await WatsappSession.updateMany({ status: "inactive" });
-  disconnectClient();
+  // disconnectClient();
   //update session
   process.kill(process.pid, "SIGUSR2");
 
@@ -138,7 +138,7 @@ process.once("SIGTERM", async () => {
   process.once(signal, async () => {
     console.log(`Received ${signal} - Starting graceful shutdown`);
     try {
-      disconnectClient();
+      // disconnectClient();
       process.exit(0);
     } catch (error) {
       console.error(`Error during ${signal} shutdown:`, error);

@@ -64,9 +64,10 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   }
 
   useEffect(() => {
-    socket.connect();
     // @listen for the 'watsapp_connected' event
+    // socket.connect();
     socket.on("watsapp_connected", (data) => {
+      console.log({ data })
       if (data) {
         setIsConnected(true);
         setConnectMessage(data.message);
@@ -105,13 +106,14 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     });
 
     socket.on("qr", (data) => {
+      console.log({ data })
       setQr(data);
     });
 
     return () => {
       // socket.off("watsapp_connected");
       // socket.off("watsapp_disconnected");
-      socket.disconnect();
+      // socket.disconnect();
     };
   }, []);
 

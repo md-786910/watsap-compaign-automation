@@ -6,7 +6,7 @@ const dbConnect = async () => {
     const port = process.env.MONGO_PORT;
     const database = process.env.MONGO_DBNAME;
 
-    if (!process.env.MONGO_URI) {
+    if (process.env.MONGO_URI) {
       uri = process.env.MONGO_URI;
     } else {
       uri = `mongodb://${host}:${port}/${database}`;

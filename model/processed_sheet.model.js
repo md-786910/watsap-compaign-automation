@@ -14,6 +14,6 @@ const processedSheetSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-processedSheetSchema.index({ phone_number: 1 }, { unique: true });
+processedSheetSchema.index({ phone_number: 1 });
 const processedSheet = mongoose.model("processedSheet", processedSheetSchema);
 module.exports = processedSheet;

@@ -11,6 +11,21 @@ class ProcessSheetManager {
 
   // Format Data (Ensure Consistency)
   formatData(row) {
+    // Check if at least one 'name' key exists
+    if (!("name" in row) && !("Name" in row)) {
+      throw new Error("No valid 'name' key found in the row object");
+    }
+  
+    // Check if at least one 'phone number' key exists
+    if (
+      !("phone_number" in row) &&
+      !("Phone Number" in row) &&
+      !("phone number" in row) &&
+      !("Mobile" in row)
+    ) {
+      throw new Error("No valid 'phone number' key found in the row object");
+    }
+  
     return {
       name: row["name"] || row["Name"] || "Unknown",
       phone_number:

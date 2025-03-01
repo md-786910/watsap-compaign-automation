@@ -10,7 +10,7 @@ const server = http.createServer(app);
 
 const watsappRouter = require("./routes/watsappRoute");
 const generalRouter = require("./routes/generalRoutes");
-const { initSocket } = require("./config/socketManager");
+const { initSocket, getIO, emitToUser } = require("./config/socketManager");
 const fileRouter = require("./routes/file.route");
 const { disconnectClient } = require("./config/watsappConfig");
 const WatsappSession = require("./model/watsap_session.model");
@@ -18,6 +18,7 @@ const userRoute = require("./routes/user.route");
 const { authenticateUser } = require("./helper/auth");
 const { messageQueue } = require("./worker/queue");
 const { QUEUE_NAME } = require("./config/appconfig");
+const { SOCKET } = require("./constant/socket");
 
 // ✅ Middleware for JSON and Form Data Parsing
 app.use(express.json());
@@ -39,7 +40,7 @@ console.log("Static folder path:", path.join(__dirname, "uploads"));
 
 const router = express.Router();
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   res.send("Hello World!");
 });
 
@@ -63,7 +64,7 @@ router.use("/file", fileRouter);
 
 // ✅ Global Error Handler
 const errorHandler = (err, req, res, next) => {
-  console.log(err);
+  console.log({ err });
   res.status(err.statusCode || 500).json({
     message: err.message || "Internal Server Error",
     success: false,
@@ -91,12 +92,12 @@ server.listen(PORT, async () => {
 
 // ✅ Graceful Error Handling
 process.on("uncaughtException", (err) => {
-  console.error(`[Uncaught Exception]: ${err.message}`);
+  console.log(`[Uncaught Exception]: ${err.message}`);
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error(`[Unhandled Rejection]: ${reason}`);
+  console.log(`[Unhandled Rejection]: ${reason}`);
 });
 
 // Listen for nodemon restart event

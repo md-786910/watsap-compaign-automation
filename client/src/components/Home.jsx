@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageCircle, Zap, Shield, Users, ChevronRight, CheckCircle2, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useWhatsApp } from '../context/WatsappContext';
 import Model from './model/Model';
 import Auth from './Auth';
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -9,7 +8,8 @@ import useLocalStorage from '../hooks/useLocalStorage';
 export const Home = () => {
     const navigate = useNavigate();
     const [user, _] = useLocalStorage("user")
-    const { setShowModal, showModal, setIsRegistering, isRegistering } = useWhatsApp();
+    const [showModal, setShowModal] = useState(false);
+    const[isRegistering, setIsRegistering] = useState(false)
     useEffect(() => {
         if (user) {
             navigate("/dashboard");

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import QRCodeStyling from "qr-code-styling";
 import { QrCode, Lock, Settings, Info, ArrowUpRight, ChevronRight, ShieldCloseIcon } from 'lucide-react';
+import Loader from "./Loader";
 
 function WatsappMain(props) {
   const { qr, setShow, handleCloseWatsapp, message } = props;
@@ -9,7 +10,7 @@ function WatsappMain(props) {
     height: 200,
     type: 'png',
     data: qr,
-    margin: 10,
+    margin: 5,
     qrOptions: {
       typeNumber: 0,
       mode: 'Byte',
@@ -17,13 +18,13 @@ function WatsappMain(props) {
     },
     imageOptions: {
       hideBackgroundDots: true,
-      imageSize: 0.5,
+      imageSize: 0.9,
       margin: 20,
       crossOrigin: 'anonymous',
     },
     dotsOptions: {
-      color: 'bleu',
-      type: 'rounded'
+      color: 'black',
+      type: 'square'
     },
     backgroundOptions: {
       color: '#25D366',
@@ -60,10 +61,11 @@ function WatsappMain(props) {
             <div className="bg-[#25D366]/10 p-2 rounded-lg">
               <QrCode className="w-6 h-6 text-[#25D366]" />
             </div>
-            <span className="text-xl font-semibold text-[#25D366]">WhatsApp</span>
+            <span className="text-xl font-semibold text-[#25D366]">WhatsApp 
+            </span>
           </div>
-          <div>
-            {message}
+          <div className="flex items-center gap-2">
+            <span>{message} <strong>connecting...</strong></span> <Loader width={20} height={20} />
           </div>
           <div>
             <button>

@@ -1,40 +1,36 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 
-let client = null; // Store the WhatsApp client instance
+const clients = new Map();
 
-const initializeClientWebjs = (clientId = "default") => {
-  if (client) {
-    console.log("WhatsApp client is already initialized.");
-    return client;
+const initializeClientWebjs = (session_id) => {
+  if (!session_id) throw new Error("Session ID is required");
+
+  if (clients.has(session_id)) {
+    console.log(`Client for session ${session_id} already exists`);
+    return clients.get(session_id);
   }
-  client = new Client({
+
+  const client = new Client({
     puppeteer: {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     },
-    authStrategy: new LocalAuth({ clientId }),
+    authStrategy: new LocalAuth({ clientId: session_id }),
   });
 
+  clients.set(session_id, client);
   return client;
 };
 
-const disconnectClient = () => {
-  if (client) {
+const disconnectClient = (session_id) => {
+  if (clients.has(session_id)) {
+    const client = clients.get(session_id);
     client.destroy();
-    client = null;
-    console.log("WhatsApp client disconnected.");
-  } else {
-    console.log("No active WhatsApp client to disconnect.");
-    throw new Error("No active WhatsApp client to disconnect.");
+    clients.delete(session_id);
+    console.log(`Disconnected client for session ${session_id}`);
   }
 };
 
-const getClient = () => {
-  if (!client) {
-    console.log("WhatsApp client is not initialized.");
-    return false;
-  }
-  return client;
-};
+const getClient = (session_id) => clients.get(session_id) || null;
 
 module.exports = { initializeClientWebjs, disconnectClient, getClient };

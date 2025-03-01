@@ -1,6 +1,8 @@
+const { getClient, disconnectClient } = require("../config/watsappConfig");
 const { AUTHENTICATION_TYPE } = require("../constant/authentication");
 const User = require("../model/user.model");
 const UserSession = require("../model/user_session.model");
+const WatsappSession = require("../model/watsap_session.model");
 const AppError = require("../utils/AppError");
 const CatchAsync = require("../utils/CatchAsync");
 const { generatePassword64 } = require("../utils/common");
@@ -148,6 +150,18 @@ exports.login = CatchAsync(async (req, res, next) => {
   const isPasswordCorrect = await comparePassword(password, user.password);
   if (!isPasswordCorrect) {
     return next(new AppError("password is incorrect", 404));
+  }
+
+  // disconnect watsapp client
+  const watsappSessions = await WatsappSession.find({
+    userId: user._id,
+    status: "active",
+  });
+  for (const watappSession of watsappSessions) {
+    const existingClient = getClient(watappSession?.session_id);
+    if (existingClient) {
+      existingClient.destroy();
+    }
   }
 
   // Proceed to login

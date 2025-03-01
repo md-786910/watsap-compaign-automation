@@ -9,6 +9,7 @@ const {
 const { getClient } = require("../config/watsappConfig");
 const { countCreditLeft } = require("../utils/credit");
 const User = require("../model/user.model");
+const WatsappSession = require("../model/watsap_session.model");
 // Configuration
 const BATCH_CONFIG = {
   BATCH_SIZE: 20,
@@ -91,12 +92,16 @@ async function processBatch({
   messageContent,
   userId,
 }) {
-  const client = getClient();
+  const watappSession = await WatsappSession.findOne({
+    userId,
+    status: "active",
+  });
+  const client = getClient(watappSession?.session_id);
   if (!client) {
     throw new Error("WhatsApp client not connected");
   }
   for (const recipient of batch) {
-    emitIOMessage(`Reaading phone number ${recipient.phoneNumber}`);
+    emitIOMessage(`Reaading phone number ${recipient.phoneNumber}`, userId);
     const { phoneNumber, name } = recipient;
     try {
       // add check if already exist in skip it
@@ -106,7 +111,8 @@ async function processBatch({
         status: CODESTATUS.SUCCESS,
       });
       emitIOMessage(
-        `Checking phone number already exist ${recipient.phoneNumber}`
+        `Checking phone number already exist ${recipient.phoneNumber}`,
+        userId
       );
 
       if (
@@ -119,7 +125,7 @@ async function processBatch({
           reason: `Already sended message for contact ${phoneNumber}`,
           userId,
         });
-        emitIOMessage(`Skipping ${recipient.phoneNumber}`);
+        emitIOMessage(`Skipping ${recipient.phoneNumber}`, userId);
         continue;
       }
 
@@ -130,7 +136,10 @@ async function processBatch({
           reason: "Non-Indian phone number",
           userId,
         });
-        emitIOMessage(`Skipping not indian number ${recipient.phoneNumber}`);
+        emitIOMessage(
+          `Skipping not indian number ${recipient.phoneNumber}`,
+          userId
+        );
 
         continue;
       }
@@ -148,7 +157,8 @@ async function processBatch({
           userId,
         });
         emitIOMessage(
-          `Skipping not registered on watsapp ${recipient.phoneNumber}`
+          `Skipping not registered on watsapp ${recipient.phoneNumber}`,
+          userId
         );
         continue;
       }
@@ -174,13 +184,14 @@ async function processBatch({
           userId,
         });
         emitIOMessageStats(
-          `${messageCount} message sent : ${recipient.phoneNumber}`
+          `${messageCount} message sent : ${recipient.phoneNumber}`,
+          userId
         );
 
         // check credit left or not
         const isCreditLeft = await countCreditLeft(userId);
         if (!isCreditLeft) {
-          emitIOMessageStats(`credit limit exceeded`);
+          emitIOMessageStats(`credit limit exceeded`, userId);
           return;
         }
         // update credit count
@@ -196,7 +207,7 @@ async function processBatch({
         );
 
         // update reamining count
-        emitIOCreditLimitStats(credit?.remaining_credit);
+        emitIOCreditLimitStats(credit?.remaining_credit, userId);
       }
       await delay(BATCH_CONFIG.MESSAGE_DELAY);
     } catch (error) {
@@ -206,7 +217,10 @@ async function processBatch({
         reason: error.message,
         userId,
       });
-      emitIOMessage(`error ${error.message} for ${recipient.phoneNumber}`);
+      emitIOMessage(
+        `error ${error.message} for ${recipient.phoneNumber}`,
+        userId
+      );
       throw error;
     }
   }

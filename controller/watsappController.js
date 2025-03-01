@@ -9,13 +9,21 @@ const processedSheet = require("../model/processed_sheet.model");
 const Template = require("../model/template.model");
 const { countCreditLeft } = require("../utils/credit");
 const mongoose = require("mongoose");
+const WatsappSession = require("../model/watsap_session.model");
 
 exports.LoadCampaingAndStarted = async (req, res, next) => {
-  const client = getClient();
+  const userId = req.user?._id;
+
+  const watappSession = await WatsappSession.findOne({
+    userId,
+    status: "active",
+  });
+  const client = getClient(watappSession?.session_id);
   // Check if client is ready
   if (!client) {
     emitIOMessage(
-      "WhatsApp client not connected. Please scan QR code or wait for connection"
+      "WhatsApp client not connected. Please scan QR code or wait for connection",
+      userId
     );
     return res.status(503).json({
       message:
@@ -27,7 +35,7 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
   // Check credit left or not
   const isCreditLeft = await countCreditLeft(req.user?._id);
   if (!isCreditLeft) {
-    emitIOMessage("You have no credit left");
+    emitIOMessage("You have no credit left", userId);
     return res.status(404).json({
       message: "You have no credit left. Please buy credit",
       status: false,
@@ -89,13 +97,14 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Transfer-Encoding", "chunked");
 
-  emitIOMessage("App started");
+  emitIOMessage("App started", userId);
   const messageLogs = [];
   let processedCount = 0;
   try {
     // Process static recipients array in batches
     emitIOMessage(
-      "Start defining batch for reciepent of size " + BATCH_CONFIG.BATCH_SIZE
+      "Start defining batch for reciepent of size " + BATCH_CONFIG.BATCH_SIZE,
+      userId
     );
 
     for (let i = 0; i < RECIPIENTS.length; i += BATCH_CONFIG.BATCH_SIZE) {
@@ -116,7 +125,8 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
       });
       processedCount += batch.length;
       emitIOMessage(
-        "Processing " + processedCount + " of " + RECIPIENTS.length
+        "Processing " + processedCount + " of " + RECIPIENTS.length,
+        userId
       );
 
       // Send progress update with newline delimiter
@@ -144,12 +154,12 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
     );
 
     res.end(); // Properly end the response
-    emitIOMessage("Send to all watsapp message completed");
+    emitIOMessage("Send to all watsapp message completed", userId);
   } catch (error) {
     console.error("Error in bulk processing:", error);
     // Send error response with newline
     // stream with socket
-    emitIOMessage("Error comming " + error?.message);
+    emitIOMessage("Error comming " + error?.message, userId);
     res.write(
       JSON.stringify({
         error: "Internal Server Error",
@@ -157,7 +167,7 @@ exports.LoadCampaingAndStarted = async (req, res, next) => {
       }) + "\n"
     );
     res.end();
-    emitIOMessage("Send to all watsapp message completed");
+    emitIOMessage("Send to all watsapp message completed", userId);
   }
 };
 

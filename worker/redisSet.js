@@ -1,11 +1,16 @@
-const { promisify } = require("util");
-const initRedis = require("./initRedis");
+const redisClient = require("./initRedis");
 
-const client = initRedis;
+// Wrap Redis commands in async functions
+const setAsync = async (key, value, expire = 86400) => {
+  return redisClient.set(key, JSON.stringify(value), "EX", expire);
+};
 
-// Promisify Redis methods for async/await
-const setAsync = promisify(client.set).bind(client);
-const getAsync = promisify(client.get).bind(client);
-const delAsync = promisify(client.del).bind(client);
+const getAsync = async (key) => {
+  return redisClient.get(key);
+};
 
-module.exports = { client, setAsync, getAsync, delAsync };
+const delAsync = async (key) => {
+  return redisClient.del(key);
+};
+
+module.exports = { setAsync, getAsync, delAsync };

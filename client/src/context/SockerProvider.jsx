@@ -16,6 +16,7 @@ export const SocketProvider = ({ children }) => {
       reconnection: true, // Automatically reconnect if disconnected
       reconnectionAttempts: 5,
       query: { userId: user ? user?._id : null, session_id: session_id || "" },
+      transports: ["websocket"],  // Enforce WebSocket only
     });
 
     // Set socket instance once connected
@@ -34,10 +35,10 @@ export const SocketProvider = ({ children }) => {
       console.log('Socket disconnected');
       setSocket(null);
     };
-  }, [session_id]); // Reconnect if token changes
+  }, []); // Reconnect if token changes
 
   return (
-    <SocketContext.Provider value={socket}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );

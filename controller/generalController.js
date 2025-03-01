@@ -1,4 +1,4 @@
-const { getIO } = require("../config/socketManager");
+const { emitToUser } = require("../config/socketManager");
 const {
   initializeClientWebjs,
   disconnectClient,
@@ -16,27 +16,16 @@ const { cleanupFile, fileNameSave } = require("../helper/multer");
 const Template = require("../model/template.model");
 const fs = require("fs").promises;
 const qrcode = require("qrcode-terminal");
-const initRedis = require("../worker/initRedis");
-
-const redis = initRedis;
-
 
 exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
-  const existingClient = getClient();
   const userId = req.user?._id;
-
+  const { session_id } = req.body;
+  if (!userId) return next(new AppError("User ID is required", 401));
+  if (!session_id) return next(new AppError("Session ID is required", 400));
   try {
-    if (existingClient) {
-      existingClient.destroy();
-    }
-    // Get IO instance
-    const io = getIO();
-    const { session_id } = req.body;
-
-    // Check if session_id is provided
-    if (!session_id) {
-      return next(new AppError("Session ID is required", 400)); // 400 Bad Request is more appropriate
-    }
+    // Check for existing client and disconnect if necessary
+    const existingClient = getClient(session_id);
+    if (existingClient) disconnectClient(session_id);
 
     // Initialize the WhatsApp client
     const client = await initializeClientWebjs(session_id);
@@ -54,33 +43,41 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
       });
     }
     // @UPDATE SESSION TO BE INACTIVE
-    await WatsappSession.updateMany({
-      userId,
-      status: "inactive",
-    });
+    await WatsappSession.updateMany(
+      { userId, status: "active" }, // Filter: Find documents matching userId and status "inactive"
+      { $set: { status: "inactive" } } // Update: Set status to "active"
+    );
 
     // Handle QR code event
     client.on("qr", (qr) => {
       console.log("QR Code received. Waiting for scan...");
-      qrcode.generate(qr, { small: true }); // Display QR code in terminal
-      io.emit(SOCKET.WATSAPP_CONNECTED, {
-        message: "please scan the QR code",
-        status: "waiting_for_qr",
-        qr: qr, // Optionally send the QR code data if needed
-        connecting: true,
-      });
+      // qrcode.generate(qr, { small: true }); // Display QR code in terminal
+      emitToUser(
+        SOCKET.WATSAPP_CONNECTED,
+        {
+          message: "please scan the QR code",
+          status: "waiting_for_qr",
+          qr: qr, // Optionally send the QR code data if needed
+          connecting: true,
+        },
+        userId
+      );
     });
 
     // Handle ready event
     client.on("ready", async () => {
       console.log("WhatsApp Web is ready!");
-      io.emit(SOCKET.WATSAPP_CONNECTED, {
-        message: "connected to whatsApp successfully",
-        status: "connected",
-        connecting: false,
-      });
+      emitToUser(
+        SOCKET.WATSAPP_CONNECTED,
+        {
+          message: "connected to whatsApp successfully",
+          status: "connected",
+          connecting: false,
+        },
+        userId
+      );
       await WatsappSession.findOneAndUpdate(
-        { session_id },
+        { userId, session_id },
         {
           $set: {
             status: "active",
@@ -92,34 +89,36 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
         },
         { new: true, upsert: true } // Return the updated document
       );
-      session.status = "active";
-      session.user = client.info?.pushname;
-      session.phone_number = client.info?.wid?.user;
-      session.device = client.info?.platform;
-      session.userId = userId;
-      await session.save();
     });
 
     // Handle authentication failure
     client.on("auth_failure", (msg) => {
       console.error("Authentication failed:", msg);
-      io.emit(SOCKET.WATSAPP_CONNECTED, {
-        message: "whatsApp authentication failed",
-        status: "auth_failed",
-        error: msg,
-        connecting: true,
-      });
+      emitToUser(
+        SOCKET.WATSAPP_CONNECTED,
+        {
+          message: "whatsApp authentication failed",
+          status: "auth_failed",
+          error: msg,
+          connecting: true,
+        },
+        userId
+      );
     });
 
     // Handle disconnection
     client.on("disconnected", (reason) => {
       console.log("Client was logged out:", reason);
-      io.emit(SOCKET.WATSAPP_CONNECTED, {
-        message: "ahatsApp disconnected",
-        status: "disconnected",
-        reason: reason,
-        connecting: true,
-      });
+      emitToUser(
+        SOCKET.WATSAPP_CONNECTED,
+        {
+          message: "ahatsApp disconnected",
+          status: "disconnected",
+          reason: reason,
+          connecting: true,
+        },
+        userId
+      );
     });
 
     // Initialize the client
@@ -129,9 +128,11 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
     res.status(200).json({
       message: "WhatsApp client initialization started connecting...",
       status: "initializing",
+      session_id,
     });
   } catch (error) {
     console.error("Error initializing WhatsApp:", error);
+    disconnectClient(session_id);
     res.status(500).json({
       message: "Something went wrong",
       status: "error",
@@ -141,10 +142,12 @@ exports.connectedToWatsapp = CatchAsync(async (req, res, next) => {
 });
 
 exports.disconnectedFromWatsapp = CatchAsync(async (req, res, next) => {
+  const { session_id } = req.body;
   await WatsappSession.updateMany({
     status: "inactive",
+    userId: req.user?._id,
   });
-  disconnectClient();
+  disconnectClient(session_id);
   res.status(200).json({
     message: "watsapp disconnected successfully",
     status: true,

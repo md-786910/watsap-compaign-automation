@@ -6,15 +6,17 @@ import { SOCKET_API } from '../utils/common';
 const SocketContext = createContext(null);
 
 // Socket Provider Component
-export const SocketProvider = ({ children, token }) => {
+export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
-
+  const user = JSON.parse(JSON.parse(localStorage.getItem("user")));
+  const session_id = JSON.parse(localStorage.getItem("session_id"));
   useEffect(() => {
     // Initialize Socket.IO client
     const socketInstance = io(SOCKET_API, {
-      auth: { token }, // Pass JWT token for authentication
       reconnection: true, // Automatically reconnect if disconnected
       reconnectionAttempts: 5,
+      query: { userId: user ? user?._id : null, session_id: session_id || "" },
+      transports: ["websocket"],  // Enforce WebSocket only
     });
 
     // Set socket instance once connected
@@ -33,10 +35,10 @@ export const SocketProvider = ({ children, token }) => {
       console.log('Socket disconnected');
       setSocket(null);
     };
-  }, [token]); // Reconnect if token changes
+  }, []); // Reconnect if token changes
 
   return (
-    <SocketContext.Provider value={socket}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );

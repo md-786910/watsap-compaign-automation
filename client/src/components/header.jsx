@@ -9,7 +9,6 @@ import {
   SettingsIcon,
   CreditCard,
 } from "lucide-react";
-import socket from "../config/socketConfig";
 import Button from "../utils/button";
 import { useWhatsApp } from "../context/WatsappContext";
 import { Link } from "react-router-dom";
@@ -19,6 +18,7 @@ import { useFetch } from "../hooks/useFetch";
 import showToast from "../helpers/Toast";
 import axiosInstance from "../config/axios";
 import WatsappMain from "./WatsappMain";
+import { useSocket } from "../context/SockerProvider";
 export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [messageStats, setMessageStats] = useState("");
   const userLogin = useLocalStorage("user")
@@ -32,6 +32,8 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     connectToWhatsApp,
     disconnectFromWhatsApp,
   } = useWhatsApp();
+
+  const { socket } = useSocket()
 
   const [qr, setQr] = useState("");
   const [show, setShow] = useState(false);
@@ -64,56 +66,58 @@ export const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
   }
 
   useEffect(() => {
-    socket.connect();
     // @listen for the 'watsapp_connected' event
-    socket.on("watsapp_connected", (data) => {
-      if (data) {
-        setIsConnected(true);
-        setConnectMessage(data.message);
-        setIsLoading(false);
+    if (socket) {
+      socket.on("watsapp_connected", (data) => {
+        if (data) {
+          setIsConnected(true);
+          setConnectMessage(data.message);
+          setIsLoading(false);
 
-        if (data?.qr) {
-          setQr(data.qr)
-          setTimeout(() => {
-            setShow(true)
-          }, 200)
+          if (data?.qr) {
+            setQr(data.qr)
+            setTimeout(() => {
+              setShow(true)
+            }, 100)
+          }
+          if (data?.connecting == true) {
+            setConnectMessage("watsapp connecting... please wait for while do not close window!");
+          } else {
+            setShow(false)
+          }
         }
-        if (data?.connecting == true) {
-          setConnectMessage("watsapp connecting... please wait for while do not close window!");
-        } else {
-          setShow(false)
+      });
+
+      socket.on("watsapp_disconnected", ({ disconnected, message }) => {
+        if (disconnected) {
+          setIsConnected(false);
+          setConnectMessage(message);
+          setIsLoading(false);
         }
-      }
-    });
+      });
 
-    socket.on("watsapp_disconnected", ({ disconnected, message }) => {
-      if (disconnected) {
-        setIsConnected(false);
-        setConnectMessage(message);
-        setIsLoading(false);
-      }
-    });
+      // @listen message
+      socket.on("listen_message", (data) => {
+        setMessageStats(data);
+      });
 
-    // @listen message
-    socket.on("listen_message", (data) => {
-      setMessageStats(data);
-    });
+      //@refresh update_credit
+      socket.on("update_credit", (data) => {
+        setCredit(data);
+      });
 
-    //@refresh update_credit
-    socket.on("update_credit", (data) => {
-      setCredit(data);
-    });
+      socket.on("qr", (data) => {
+        setQr(data);
+      });
 
-    socket.on("qr", (data) => {
-      setQr(data);
-    });
-
-    return () => {
-      // socket.off("watsapp_connected");
-      // socket.off("watsapp_disconnected");
-      socket.disconnect();
-    };
-  }, []);
+      return () => {
+        socket.off("watsapp_connected");
+        socket.off("watsapp_disconnected");
+        socket.off("listen_message");
+        socket.off("update_credit");
+      };
+    }
+  }, [socket]);
 
   useEffect(() => {
     if (data) {

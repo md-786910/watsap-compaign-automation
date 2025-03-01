@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 import { Home } from "./components/Home";
 import ProtectedRoute from "./components/protectedRoutes";
@@ -8,7 +8,6 @@ import { Dashboard } from "./components/dashboard";
 import { ReadSheet } from "./components/sheet/readSheet";
 import { Settings } from "./components/settings/Setting";
 import Schedular from "./components/schedular/Schedular";
-import { ReadTemplate } from "./components/template/readTemplate";
 import AppLayout from "./components/AppLayout";
 import { Template } from "./components/template/NewTemplate";
 
@@ -21,16 +20,6 @@ function DashboardLayout() {
 }
 
 const App = () => {
-  const [token, setToken] = useState(null);
-
-  // Load token from localStorage on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem("access_token");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
-
   // Define router with token
   const router = createBrowserRouter([
     {
@@ -46,7 +35,7 @@ const App = () => {
         {
           element: (
             <>
-              <SocketProvider token={token}>
+              <SocketProvider >
                 <WhatsAppProvider>
                   <DashboardLayout />
                 </WhatsAppProvider>

@@ -17,6 +17,7 @@ export const WhatsAppProvider = ({ children }) => {
             });
             if (resp.status === 200) {
                 setConnectMessage(resp.data.message);
+                localStorage.setItem("session_id", JSON.stringify(resp?.data?.session_id));
             }
         } catch (error) {
             showToast(error, "error");
@@ -34,6 +35,7 @@ export const WhatsAppProvider = ({ children }) => {
                 setConnectMessage(resp.data.message);
                 setIsConnected(false);
                 showToast(resp.data.message, "success");
+                localStorage.removeItem("session_id");
             }
         } catch (error) {
             showToast(error || "Disconnection failed", "error");
